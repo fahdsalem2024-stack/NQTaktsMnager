@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-lg border-0 rounded-4">
+            <div class="card-header bg-gradient-warning text-white rounded-top-4 py-3">
+                <h4 class="mb-0"><i class="bi bi-pencil-square me-2"></i> تعديل التدريب</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" id="editTaskForm">
+                    
+                    <!-- ===== معلومات التدريب ===== -->
+                    <div class="training-info mb-4 p-3 bg-light rounded-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-1"><i class="bi bi-hash me-1"></i> <strong>رقم التدريب:</strong> {{ task.id }}</p>
+                                <p class="mb-0"><i class="bi bi-calendar me-1"></i> <strong>تاريخ الإنشاء:</strong> {{ task.created_at[:10] if task.created_at else '-' }}</p>
+                            </div>
+                            <div class="col-md-6 text-md-end">
+                                <span class="badge 
+                                    {% if task.status == 'مكتملة' %}bg-success
+                                    {% elif task.status == 'قيد التنفيذ' %}bg-warning text-dark
+                                    {% elif task.status == 'متأخرة' %}bg-danger
+                                    {% else %}bg-secondary{% endif %} fs-6 px-3 py-2">
+                                    {{ task.status }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">
+                        <i class="bi bi-info-circle me-2"></i> معلومات التدريب
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">العميل <span class="text-danger">*</span></label>
+                            <select name="client_id" class="form-select form-select-lg" required>
+                                {% for client in clients %}
+                                <option value="{{ client.id }}" {% if client.id == task.client_id %}selected{% endif %}>
+                                    {{ client.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">المدرب المسؤول <span class="text-danger">*</span></label>
+                            <select name="assigned_to" class="form-select form-select-lg" required>
+                                {% for trainer in trainers %}
+                                <option value="{{ trainer.id }}" {% if trainer.id == task.assigned_to %}selected{% endif %}>
+                                    {{ trainer.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">عنوان التدريب <span class="text-danger">*</span></label>
+                            <input type="text" name="title" class="form-control form-control-lg" value="{{ task.title }}" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">الوصف</label>
+                            <textarea name="description" class="form-control" rows="2">{{ task.description or '' }}</textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">تاريخ الاستحقاق <span class="text-danger">*</span></label>
+                            <input type="date" name="due_date" class="form-control form-control-lg" value="{{ task.due_date }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">الأولوية</label>
+                            <select name="priority" class="form-select form-select-lg">
+                                <option value="منخفضة" {% if task.priority == 'منخفضة' %}selected{% endif %}>🟢 منخفضة</option>
+                                <option value="متوسطة" {% if task.priority == 'متوسطة' %}selected{% endif %}>🟡 متوسطة</option>
+                                <option value="عالية" {% if task.priority == 'عالية' %}selected{% endif %}>🔴 عالية</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">المدة المتوقعة (ساعات)</label>
+                            <input type="number" name="estimated_duration" class="form-control form-control-lg" value="{{ task.estimated_duration or 0 }}" min="0" step="0.5">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">مجموعة التدريب</label>
+                            <input type="text" name="task_group" class="form-control form-control-lg" value="{{ task.task_group or '' }}" placeholder="مثال: مشروع تطوير الموقع - المرحلة 1">
+                            <small class="text-muted">💡 يمكنك تجميع التدريبات المتشابهة تحت مجموعة واحدة</small>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- ===== نسبة الإنجاز ===== -->
+                    <div class="section-title">
+                        <i class="bi bi-graph-up-arrow me-2"></i> نسبة الإنجاز الحالية
+                    </div>
+                    <div class="card border-0 mb-4" style="background: #f0f7ff;">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="flex-grow-1">
+                                    <div class="progress" style="height: 25px; border-radius: 12px;">
+                                        <div class="progress-bar progress-bar-striped 
+                                            {% if task.completion_percentage >= 100 %}bg-success
+                                            {% elif task.completion_percentage >= 75 %}bg-primary
+                                            {% elif task.completion_percentage >= 50 %}bg-info
+                                            {% elif task.completion_percentage >= 25 %}bg-warning
+                                            {% else %}bg-secondary{% endif %}" 
+                                            role="progressbar" 
+                                            style="width: {{ task.completion_percentage }}%; border-radius: 12px;">
+                                            {{ task.completion_percentage }}%
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="badge bg-primary fs-6 px-3 py-2">{{ task.completion_percentage }}%</span>
+                            </div>
+                            <small class="text-muted">💡 يمكنك تحديث النسبة من شاشة "تحديث الحالة"</small>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- ===== ربط الدفعة ===== -->
+                    <div class="section-title">
+                        <i class="bi bi-link me-2"></i> ربط بدفعة عقد
+                    </div>
+                    <div class="card border-0 mb-4" style="background: #fefce8;">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">اختر الدفعة المرتبطة</label>
+                                <select name="contract_payment_id" class="form-select form-select-lg" id="paymentSelect">
+                                    <option value="">-- بدون ربط --</option>
+                                    {% for payment in available_payments %}
+                                    <option value="{{ payment.id }}" 
+                                        {% if payment.id == task.contract_payment_id %}selected{% endif %}
+                                        data-contract="{{ payment.contract_number }}"
+                                        data-amount="{{ payment.amount }}"
+                                        data-status="{{ payment.status }}">
+                                        {{ payment.contract_number }} - دفعة {{ payment.installment_number }} 
+                                        ({{ payment.amount }} ر.س)
+                                        {% if payment.status == 'مستحقة' %}🟡 مستحقة{% endif %}
+                                        {% if payment.status == 'مدفوعة جزئيا' %}🟠 مدفوعة جزئياً{% endif %}
+                                        {% if payment.status == 'مدفوعة' %}✅ مدفوعة{% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">💡 عند اكتمال التدريب، سيتم تحديث حالة الدفعة تلقائياً</small>
+                            </div>
+                            
+                            <!-- ===== معلومات الدفعة ===== -->
+                            <div id="paymentInfo" class="mt-3 p-3 rounded-3" style="background: #f8f9fa; display: none;">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <small class="text-muted d-block">رقم العقد</small>
+                                        <strong id="paymentContract">-</strong>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted d-block">المبلغ</small>
+                                        <strong id="paymentAmount">-</strong>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted d-block">الحالة</small>
+                                        <span id="paymentStatus" class="badge bg-secondary">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== أزرار التحكم ===== -->
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary flex-grow-1 py-2">
+                            <i class="bi bi-save me-2"></i> حفظ التغييرات
+                        </button>
+                        <a href="/tasks" class="btn btn-outline-secondary py-2">
+                            <i class="bi bi-arrow-right me-2"></i> رجوع
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ===== عرض معلومات الدفعة =====
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentSelect = document.getElementById('paymentSelect');
+    const paymentInfo = document.getElementById('paymentInfo');
+    const paymentContract = document.getElementById('paymentContract');
+    const paymentAmount = document.getElementById('paymentAmount');
+    const paymentStatus = document.getElementById('paymentStatus');
+
+    paymentSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (this.value && selectedOption.dataset) {
+            paymentInfo.style.display = 'block';
+            paymentContract.textContent = selectedOption.dataset.contract || '-';
+            paymentAmount.textContent = selectedOption.dataset.amount || '0';
+            const status = selectedOption.dataset.status || '';
+            paymentStatus.textContent = status;
+            paymentStatus.className = 'badge ' + getStatusBadgeClass(status);
+        } else {
+            paymentInfo.style.display = 'none';
+        }
+    });
+
+    function getStatusBadgeClass(status) {
+        if (status === 'مدفوعة') return 'bg-success';
+        if (status === 'مستحقة') return 'bg-warning text-dark';
+        if (status === 'مدفوعة جزئيا') return 'bg-info';
+        return 'bg-secondary';
+    }
+
+    // تشغيل العرض عند تحميل الصفحة
+    if (paymentSelect.value) {
+        paymentSelect.dispatchEvent(new Event('change'));
+    }
+
+    // ===== التحقق من التاريخ =====
+    const form = document.getElementById('editTaskForm');
+    const dueDateInput = document.querySelector('input[name="due_date"]');
+    form.addEventListener('submit', function(e) {
+        const dueDate = new Date(dueDateInput.value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (dueDate < today) {
+            if (!confirm('⚠️ التاريخ المحدد قد مضى. هل أنت متأكد من أنك تريد المتابعة؟')) {
+                e.preventDefault();
+                return;
+            }
+        }
+    });
+});
+</script>
+
+<style>
+.bg-gradient-warning {
+    background: linear-gradient(135deg, #f57c00, #f9a825);
+}
+.training-info {
+    border-right: 5px solid #1a237e;
+    background: #f8f9fa;
+}
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1a237e;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+.form-control-lg, .form-select-lg {
+    border-radius: 12px;
+    padding: 12px 16px;
+    border: 2px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+.form-control-lg:focus, .form-select-lg:focus {
+    border-color: #2563EB;
+    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.15);
+}
+.progress {
+    background: #e9ecef;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+}
+.progress-bar {
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-primary {
+    background: linear-gradient(135deg, #1a237e, #0d47a1);
+    border: none;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(26, 35, 126, 0.3);
+}
+.btn-outline-secondary {
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+.btn-outline-secondary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+}
+</style>
+{% endblock %}

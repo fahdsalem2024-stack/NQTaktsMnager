@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-lg border-0 rounded-4">
+            <div class="card-header bg-gradient-primary text-white rounded-top-4 py-3">
+                <h4 class="mb-0"><i class="bi bi-person-plus me-2"></i> إضافة عميل جديد</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" id="addClientForm">
+                    
+                    <!-- ===== معلومات العميل ===== -->
+                    <div class="section-title">
+                        <i class="bi bi-info-circle me-2"></i> معلومات العميل
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">الاسم <span class="text-danger">*</span></label>
+                            <input type="text" name="name" class="form-control form-control-lg" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">اسم الشركة</label>
+                            <input type="text" name="company_name" class="form-control form-control-lg">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">رقم الهاتف</label>
+                            <input type="tel" name="phone" class="form-control form-control-lg">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">البريد الإلكتروني</label>
+                            <input type="email" name="email" class="form-control form-control-lg">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">العنوان</label>
+                            <input type="text" name="address" class="form-control form-control-lg">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">ملاحظات</label>
+                            <textarea name="notes" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- ===== اختيار المدربين ===== -->
+                    <div class="section-title">
+                        <i class="bi bi-person-badge me-2"></i> المدربين المسؤولين
+                    </div>
+                    <div class="card border-0 mb-4" style="background: #f0f7ff;">
+                        <div class="card-body">
+                            <div class="dropdown">
+                                <button class="btn btn-outline-secondary w-100 text-start dropdown-toggle" 
+                                        type="button" id="trainerDropdown" 
+                                        data-bs-toggle="dropdown" aria-expanded="false"
+                                        style="border-radius: 12px; padding: 12px 16px;">
+                                    <span id="selectedTrainersText" style="color: #6c757d;">اختر المدربين</span>
+                                </button>
+                                <ul class="dropdown-menu w-100 p-2" aria-labelledby="trainerDropdown" 
+                                    style="max-height: 200px; overflow-y: auto; border-radius: 12px;">
+                                    {% if trainers %}
+                                        {% for trainer in trainers %}
+                                        <li>
+                                            <div class="form-check">
+                                                <input class="form-check-input trainer-checkbox" type="checkbox" 
+                                                       name="trainer_ids" value="{{ trainer.id }}" 
+                                                       id="trainer{{ trainer.id }}"
+                                                       onchange="updateTrainerSelection()">
+                                                <label class="form-check-label" for="trainer{{ trainer.id }}">
+                                                    {{ trainer.name }}
+                                                </label>
+                                            </div>
+                                        </li>
+                                        {% endfor %}
+                                    {% else %}
+                                        <li class="text-muted text-center">⚠️ لا يوجد مدربين</li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                            <small class="text-muted">💡 اختر مدرب واحد أو أكثر من القائمة</small>
+                        </div>
+                    </div>
+
+                    <!-- ===== أزرار التحكم ===== -->
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-success flex-grow-1 py-2">
+                            <i class="bi bi-check-circle me-2"></i> إضافة العميل
+                        </button>
+                        <a href="/clients" class="btn btn-outline-secondary py-2">
+                            <i class="bi bi-arrow-right me-2"></i> رجوع
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateTrainerSelection() {
+    var checkboxes = document.querySelectorAll('.trainer-checkbox:checked');
+    var textElement = document.getElementById('selectedTrainersText');
+    if (checkboxes.length === 0) {
+        textElement.textContent = 'اختر المدربين';
+        textElement.style.color = '#6c757d';
+    } else {
+        var names = [];
+        checkboxes.forEach(function(cb) {
+            var label = document.querySelector('label[for="' + cb.id + '"]');
+            names.push(label.textContent.trim());
+        });
+        textElement.textContent = names.join(', ');
+        textElement.style.color = '#1a237e';
+        textElement.style.fontWeight = '500';
+    }
+}
+document.addEventListener('DOMContentLoaded', function() {
+    updateTrainerSelection();
+});
+</script>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #1a237e, #0d47a1);
+}
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1a237e;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+.form-control-lg {
+    border-radius: 12px;
+    padding: 12px 16px;
+    border: 2px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+.form-control-lg:focus {
+    border-color: #2563EB;
+    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.15);
+}
+.btn-success {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    border: none;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+.btn-success:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+}
+.btn-outline-secondary {
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+.btn-outline-secondary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+}
+</style>
+{% endblock %}
