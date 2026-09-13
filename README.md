@@ -1,0 +1,2 @@
+# NQTaktsMnager
+NQTaktsMnager
