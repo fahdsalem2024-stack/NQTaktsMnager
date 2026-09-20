@@ -11,7 +11,7 @@ from routes import trainers_bp
 # ===== إنشاء التطبيق =====
 app = Flask(__name__)
 app.config.from_object(Config)
-app.secret_key = 's7f8g9h0j1k2l3m4n5o6p7q8r9s0t1u2v3w4x5y6z7a8b9c0d1e2f3g4h5i6j7k8l9'
+app.secret_key = os.environ.get('SECRET_KEY') or 'dev-only-temporary-key-change-me'
 
 # ===== مجلدات =====
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
