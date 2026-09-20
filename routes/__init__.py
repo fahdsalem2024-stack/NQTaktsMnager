@@ -14,7 +14,5 @@ reports_bp = Blueprint('reports', __name__, url_prefix='/')
 settings_bp = Blueprint('settings', __name__, url_prefix='/')
 backups_bp = Blueprint('backups', __name__, url_prefix='/')
 
-# ⚠️ لا نعرّف trainers_bp هنا - هو معرّف في routes/trainers.py
-# وبيتم استيراده مباشرة في app.py
-
+# ⚠️ لا تعرّف trainers_bp هنا
 from . import auth, users, clients, tasks, contracts, payments, modules, meetings, reports, settings, backups

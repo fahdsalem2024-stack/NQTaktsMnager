@@ -7,7 +7,7 @@ from models import init_db, get_db
 from utils import get_company_settings, get_lang, t, log_activity
 from datetime import datetime
 from routes import trainers_bp
-from routes.trainers import trainers_bp
+
 
 # ===== إنشاء التطبيق =====
 app = Flask(__name__)
@@ -28,6 +28,7 @@ from routes import (
     contracts_bp, payments_bp, modules_bp, meetings_bp,
     reports_bp, settings_bp, backups_bp
 )
+from routes.trainers import trainers_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(users_bp)
