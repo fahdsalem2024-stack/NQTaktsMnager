@@ -6,7 +6,7 @@ from config import Config
 from models import init_db, get_db
 from utils import get_company_settings, get_lang, t, log_activity
 from datetime import datetime
-from routes import trainers_bp
+
 
 
 # ===== إنشاء التطبيق =====
@@ -23,7 +23,7 @@ os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'contracts'), exist_ok=Tru
 init_db()
 
 # ===== تسجيل Blueprints =====
-ffrom routes import (
+from routes import (
     auth_bp, users_bp, clients_bp, tasks_bp,
     contracts_bp, payments_bp, modules_bp, meetings_bp,
     reports_bp, settings_bp, backups_bp
