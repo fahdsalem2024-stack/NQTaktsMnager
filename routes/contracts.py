@@ -6,28 +6,26 @@ import os
 import math
 from models import get_db
 from routes import contracts_bp
-from utils import log_activity, get_company_settings
+from utils import log_activity, get_company_settings, is_safe_path
+
 
 @contracts_bp.route('/contracts')
 def contracts():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
-    # ===== الحصول على معاملات الفلترة والترقيم =====
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
     search = request.args.get('search', '').strip()
     status_filter = request.args.get('status', '')
     payment_filter = request.args.get('payment_status', '')
     
-    # ===== تحديد عدد العناصر في الصفحة =====
     if per_page == 0 or per_page == 999999:
         per_page = 999999
         page = 1
     
     conn = get_db()
     
-    # ===== بناء الاستعلام الأساسي =====
     query = '''
         SELECT client_contracts.*, 
                clients.name as client_name,
@@ -42,23 +40,19 @@ def contracts():
     '''
     params = []
     
-    # ===== البحث =====
     if search:
         query += ' AND (client_contracts.contract_number LIKE ? OR client_contracts.title LIKE ? OR clients.name LIKE ? OR clients.company_name LIKE ?)'
         search_param = f'%{search}%'
         params.extend([search_param, search_param, search_param, search_param])
     
-    # ===== فلترة حسب حالة العقد =====
     if status_filter:
         query += ' AND client_contracts.status = ?'
         params.append(status_filter)
     
-    # ===== فلترة حسب حالة الدفع =====
     if payment_filter:
         query += ' AND client_contracts.payment_status = ?'
         params.append(payment_filter)
     
-    # ===== إجمالي النتائج =====
     count_query = '''
         SELECT COUNT(*) as count
         FROM client_contracts
@@ -82,7 +76,6 @@ def contracts():
     
     total = conn.execute(count_query, count_params).fetchone()['count']
     
-    # ===== ترتيب وترقيم =====
     query += ' ORDER BY client_contracts.created_at DESC'
     
     if per_page != 999999:
@@ -93,13 +86,11 @@ def contracts():
     contracts_list = conn.execute(query, params).fetchall()
     conn.close()
     
-    # ===== حساب عدد الصفحات =====
     if per_page == 999999:
         total_pages = 1
     else:
         total_pages = math.ceil(total / per_page) if total > 0 else 1
     
-    # ===== إحصائيات سريعة للفلترة =====
     conn = get_db()
     stats = {
         'total': conn.execute('SELECT COUNT(*) as count FROM client_contracts').fetchone()['count'],
@@ -592,6 +583,13 @@ def download_contract_attachment(attachment_id):
     
     conn.close()
     
+    # 🔒 التحقق من أمان المسار
+    if not is_safe_path(attachment['file_path']):
+        flash('⛔ مسار الملف غير آمن', 'danger')
+        log_activity(session['user_id'], 'محاولة وصول غير مصرح', 
+                    f'محاولة تحميل ملف بمسار غير آمن: {attachment["file_path"]}')
+        return redirect(url_for('contracts.contracts'))
+    
     if os.path.exists(attachment['file_path']):
         return send_file(attachment['file_path'], 
                        as_attachment=True, 
@@ -611,6 +609,14 @@ def delete_contract_attachment(attachment_id):
     if not attachment:
         flash('❌ المرفق غير موجود', 'danger')
         conn.close()
+        return redirect(url_for('contracts.contracts'))
+    
+    # 🔒 التحقق من أمان المسار قبل الحذف
+    if not is_safe_path(attachment['file_path']):
+        flash('⛔ مسار الملف غير آمن', 'danger')
+        conn.close()
+        log_activity(session['user_id'], 'محاولة وصول غير مصرح', 
+                    f'محاولة حذف ملف بمسار غير آمن: {attachment["file_path"]}')
         return redirect(url_for('contracts.contracts'))
     
     if os.path.exists(attachment['file_path']):
@@ -687,16 +693,6 @@ def mark_payment_paid(payment_id):
     contract = conn.execute('SELECT total_amount, contract_value FROM client_contracts WHERE id = ?', (contract_id,)).fetchone()
     total = contract['total_amount'] or contract['contract_value'] or 0
     
-    paid_full_count = conn.execute('''
-        SELECT COUNT(*) as count FROM contract_payments 
-        WHERE contract_id = ? AND status = 'مدفوعة'
-    ''', (contract_id,)).fetchone()['count']
-    
-    total_installments = conn.execute('''
-        SELECT COUNT(*) as count FROM contract_payments 
-        WHERE contract_id = ?
-    ''', (contract_id,)).fetchone()['count']
-    
     if total == 0:
         payment_status = 'غير مدفوع'
     elif total_paid >= total:
@@ -705,8 +701,6 @@ def mark_payment_paid(payment_id):
         payment_status = 'مدفوع جزئيا'
     else:
         payment_status = 'غير مدفوع'
-    
-    print(f"📊 تحديث حالة العقد {contract_id}: total={total}, total_paid={total_paid}, status={payment_status}")
     
     conn.execute('''
         UPDATE client_contracts 

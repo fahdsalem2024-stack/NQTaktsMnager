@@ -1,8 +1,9 @@
 # utils.py
 from models import get_db
-from flask import session
+from flask import session, current_app
 import time
 import sqlite3
+import os
 from datetime import datetime, timedelta
 
 
@@ -112,10 +113,8 @@ def check_rate_limit(username, ip_address, max_attempts=5, window_minutes=15):
     try:
         conn = get_db()
         
-        # حساب الوقت قبل كذا دقيقة
         window_start = (datetime.now() - timedelta(minutes=window_minutes)).strftime('%Y-%m-%d %H:%M:%S')
         
-        # عدد المحاولات الفاشلة في النافذة الزمنية
         failed_attempts = conn.execute('''
             SELECT COUNT(*) as count FROM login_attempts
             WHERE (username = ? OR ip_address = ?)
@@ -123,7 +122,6 @@ def check_rate_limit(username, ip_address, max_attempts=5, window_minutes=15):
               AND attempt_time >= ?
         ''', (username, ip_address, window_start)).fetchone()['count']
         
-        # آخر محاولة فاشلة
         last_attempt = conn.execute('''
             SELECT attempt_time FROM login_attempts
             WHERE (username = ? OR ip_address = ?)
@@ -150,7 +148,6 @@ def check_rate_limit(username, ip_address, max_attempts=5, window_minutes=15):
         
     except Exception as e:
         print(f"⚠️ خطأ في check_rate_limit: {e}")
-        # في حالة الخطأ، نسمح بالمحاولة
         return False, 5, 0
 
 
@@ -198,3 +195,48 @@ def cleanup_old_attempts(days=7):
     except Exception as e:
         print(f"⚠️ خطأ في تنظيف محاولات الدخول: {e}")
         return False
+
+
+# ===== تأمين الملفات =====
+
+def is_safe_path(file_path, base_folder=None):
+    """
+    التحقق إن المسار جوا المجلد المسموح بيه
+    
+    Args:
+        file_path: المسار المطلوب التحقق منه
+        base_folder: المجلد الأساسي (افتراضي: UPLOAD_FOLDER)
+    
+    Returns:
+        bool: True لو آمن، False لو مش آمن
+    """
+    if not file_path:
+        return False
+    
+    # لو مفيش base_folder، استخدم UPLOAD_FOLDER من الإعدادات
+    if base_folder is None:
+        try:
+            base_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+        except:
+            base_folder = 'uploads'
+    
+    try:
+        # احصل على المسار المطلق
+        abs_file_path = os.path.abspath(file_path)
+        abs_base_folder = os.path.abspath(base_folder)
+        
+        # تحقق إن الملف جوا المجلد
+        return (abs_file_path.startswith(abs_base_folder + os.sep) or 
+                abs_file_path == abs_base_folder)
+    except Exception as e:
+        print(f"⚠️ خطأ في التحقق من المسار: {e}")
+        return False
+
+
+def get_safe_file_path(file_path, base_folder=None):
+    """
+    إرجاع المسار الآمن أو None لو مش آمن
+    """
+    if is_safe_path(file_path, base_folder):
+        return file_path
+    return None

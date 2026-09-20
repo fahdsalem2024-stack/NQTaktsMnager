@@ -16,6 +16,9 @@ from .utils import (
     record_login_attempt,
     clear_login_attempts,
     cleanup_old_attempts,
+    # ===== File Security =====
+    is_safe_path,
+    get_safe_file_path,
 )
 
 # استيراد الديكورات من decorators.py
