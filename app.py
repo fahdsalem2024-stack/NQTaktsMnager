@@ -23,7 +23,7 @@ os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'contracts'), exist_ok=Tru
 init_db()
 
 # ===== تسجيل Blueprints =====
-from routes import (
+ffrom routes import (
     auth_bp, users_bp, clients_bp, tasks_bp,
     contracts_bp, payments_bp, modules_bp, meetings_bp,
     reports_bp, settings_bp, backups_bp
