@@ -109,3 +109,22 @@ def set_lang(lang):
         session['lang'] = lang
         flash(f'✅ تم تغيير اللغة إلى {lang}', 'success')
     return redirect(request.referrer or url_for('index'))
+
+# ===== Route تشخيصي مؤقت (امسحه بعد ما نخلص) =====
+@auth_bp.route('/debug_login_attempts')
+def debug_login_attempts():
+    from models import get_db
+    conn = get_db()
+    attempts = conn.execute('''
+        SELECT * FROM login_attempts 
+        ORDER BY attempt_time DESC LIMIT 20
+    ''').fetchall()
+    conn.close()
+    
+    result = "<h2>Login Attempts (آخر 20)</h2><table border='1' cellpadding='5'>"
+    result += "<tr><th>ID</th><th>Username</th><th>IP</th><th>Success</th><th>Time</th></tr>"
+    for a in attempts:
+        result += f"<tr><td>{a['id']}</td><td>{a['username']}</td><td>{a['ip_address']}</td><td>{a['success']}</td><td>{a['attempt_time']}</td></tr>"
+    result += "</table>"
+    result += f"<p>Total: {len(attempts)}</p>"
+    return result
