@@ -1,0 +1,40 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.so
+env/
+venv/
+.venv/
+build/
+dist/
+
+# Flask
+instance/
+
+# قاعدة البيانات
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# الملفات المرفوعة
+uploads/
+static/uploads/
+backups/
+
+# متغيرات البيئة
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
