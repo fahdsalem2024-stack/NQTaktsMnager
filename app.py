@@ -361,12 +361,12 @@ def client_tasks_page(client_id):
         return redirect(url_for('clients.clients'))
     
     tasks = conn.execute('''
-        SELECT tasks.*, trainers.name as assigned_name
-        FROM tasks
-        LEFT JOIN trainers ON tasks.assigned_to = trainers.id
-        WHERE tasks.client_id = ?
-        ORDER BY tasks.due_date ASC
-    ''', (client_id,)).fetchall()
+    SELECT tasks.*, trainers.name as assigned_name
+    FROM tasks
+    LEFT JOIN trainers ON tasks.trainer_id = trainers.id
+    WHERE tasks.client_id = ?
+    ORDER BY tasks.due_date ASC
+''', (client_id,)).fetchall()
     conn.close()
     
     stats = {
@@ -601,19 +601,19 @@ def global_search():
     results['payments'] = payments
     
     tasks = conn.execute('''
-        SELECT tasks.id, tasks.title, tasks.status, tasks.due_date,
-               clients.name as client_name, clients.company_name,
-               trainers.name as trainer_name,
-               'task' as type
-        FROM tasks
-        JOIN clients ON tasks.client_id = clients.id
-        LEFT JOIN trainers ON tasks.assigned_to = trainers.id
-        WHERE clients.name LIKE ? 
-           OR clients.company_name LIKE ?
-           OR tasks.title LIKE ?
-           OR trainers.name LIKE ?
-        LIMIT 20
-    ''', (search_term, search_term, search_term, search_term)).fetchall()
+    SELECT tasks.id, tasks.title, tasks.status, tasks.due_date,
+           clients.name as client_name, clients.company_name,
+           trainers.name as trainer_name,
+           'task' as type
+    FROM tasks
+    JOIN clients ON tasks.client_id = clients.id
+    LEFT JOIN trainers ON tasks.trainer_id = trainers.id
+    WHERE clients.name LIKE ? 
+       OR clients.company_name LIKE ?
+       OR tasks.title LIKE ?
+       OR trainers.name LIKE ?
+    LIMIT 20
+''', (search_term, search_term, search_term, search_term)).fetchall()
     results['tasks'] = tasks
     
     trainers = conn.execute('''

@@ -6,12 +6,12 @@ from utils import get_trainers, check_role, log_activity, get_company_settings
 from datetime import datetime
 import math
 
+
 @clients_bp.route('/clients')
 def clients():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
-    # ===== خيارات العرض والترقيم =====
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
     search = request.args.get('search', '').strip()
@@ -22,7 +22,6 @@ def clients():
     
     conn = get_db()
     
-    # ===== بناء الاستعلام =====
     query = '''
         SELECT clients.*, 
                GROUP_CONCAT(trainers.name, ', ') as trainer_names
@@ -40,7 +39,6 @@ def clients():
     
     query += ' GROUP BY clients.id ORDER BY clients.name'
     
-    # ===== إجمالي النتائج =====
     count_query = '''
         SELECT COUNT(DISTINCT clients.id) as count
         FROM clients
@@ -55,7 +53,6 @@ def clients():
     
     total = conn.execute(count_query, count_params).fetchone()['count']
     
-    # ===== ترقيم =====
     if per_page != 999999:
         query += ' LIMIT ? OFFSET ?'
         offset = (page - 1) * per_page
@@ -196,14 +193,13 @@ def client_tasks(client_id):
     
     conn = get_db()
     
-    # جلب بيانات العميل
     client = conn.execute('SELECT * FROM clients WHERE id = ?', (client_id,)).fetchone()
     if not client:
         conn.close()
         flash('❌ العميل غير موجود', 'danger')
         return redirect(url_for('clients.clients'))
     
-    # جلب مهام العميل
+    # ✅ تم إصلاح assigned_to → trainer_id
     tasks = conn.execute('''
         SELECT tasks.*, trainers.name as assigned_name
         FROM tasks
@@ -213,7 +209,6 @@ def client_tasks(client_id):
     ''', (client_id,)).fetchall()
     conn.close()
     
-    # إحصائيات المهام
     stats = {
         'total': len(tasks),
         'completed': len([t for t in tasks if t['status'] == 'مكتملة']),
@@ -238,14 +233,13 @@ def print_client_tasks(client_id):
     
     conn = get_db()
     
-    # جلب بيانات العميل
     client = conn.execute('SELECT * FROM clients WHERE id = ?', (client_id,)).fetchone()
     if not client:
         conn.close()
         flash('❌ العميل غير موجود', 'danger')
         return redirect(url_for('clients.clients'))
     
-    # جلب مهام العميل مع اسم المدرب
+    # ✅ تم إصلاح assigned_to → trainer_id
     tasks = conn.execute('''
         SELECT tasks.*, trainers.name as assigned_name
         FROM tasks
@@ -255,13 +249,11 @@ def print_client_tasks(client_id):
     ''', (client_id,)).fetchall()
     conn.close()
     
-    # تصنيف المهام حسب الحالة
     completed_tasks = [t for t in tasks if t['status'] == 'مكتملة']
     in_progress_tasks = [t for t in tasks if t['status'] == 'قيد التنفيذ']
     overdue_tasks = [t for t in tasks if t['status'] == 'متأخرة']
     not_started_tasks = [t for t in tasks if t['status'] == 'لم تبدأ']
     
-    # إعدادات الشركة
     settings = get_company_settings()
     
     return render_template('print_client_tasks.html',
@@ -284,14 +276,12 @@ def client_payments(client_id):
     
     conn = get_db()
     
-    # جلب بيانات العميل
     client = conn.execute('SELECT * FROM clients WHERE id = ?', (client_id,)).fetchone()
     if not client:
         conn.close()
         flash('❌ العميل غير موجود', 'danger')
         return redirect(url_for('clients.clients'))
     
-    # جلب مدفوعات العميل
     payments = conn.execute('''
         SELECT client_payments.*, 
                client_modules.name as module_name,
@@ -303,7 +293,6 @@ def client_payments(client_id):
         ORDER BY client_payments.created_at DESC
     ''', (client_id,)).fetchall()
     
-    # إحصائيات المدفوعات
     stats = {
         'total_count': len(payments),
         'total_paid': sum(p['amount'] for p in payments if p['status'] == 'مدفوع'),
@@ -327,14 +316,12 @@ def print_client_full_report(client_id):
     
     conn = get_db()
     
-    # جلب بيانات العميل
     client = conn.execute('SELECT * FROM clients WHERE id = ?', (client_id,)).fetchone()
     if not client:
         conn.close()
         flash('❌ العميل غير موجود', 'danger')
         return redirect(url_for('clients.clients'))
     
-    # جلب المدفوعات
     payments = conn.execute('''
         SELECT client_payments.*, 
                client_modules.name as module_name
@@ -344,7 +331,6 @@ def print_client_full_report(client_id):
         ORDER BY client_payments.created_at DESC
     ''', (client_id,)).fetchall()
     
-    # إحصائيات المدفوعات
     stats = {
         'total_count': len(payments),
         'total_paid': sum(p['amount'] for p in payments if p['status'] == 'مدفوع'),
@@ -352,14 +338,12 @@ def print_client_full_report(client_id):
         'total_overdue': sum(p['amount'] for p in payments if p['status'] == 'متأخر')
     }
     
-    # جلب المديولات
     modules = conn.execute('''
         SELECT * FROM client_modules 
         WHERE client_id = ? 
         ORDER BY created_at DESC
     ''', (client_id,)).fetchall()
     
-    # جلب دفعات العقود
     contract_payments = conn.execute('''
         SELECT contract_payments.*, 
                client_contracts.contract_number
@@ -369,7 +353,6 @@ def print_client_full_report(client_id):
         ORDER BY contract_payments.installment_number ASC
     ''', (client_id,)).fetchall()
     
-    # إحصائيات دفعات العقود
     contract_stats = {
         'total_paid': sum(p['paid_amount'] or 0 for p in contract_payments if p['status'] == 'مدفوعة'),
         'total_due': sum(p['amount'] for p in contract_payments if p['status'] == 'مستحقة'),
