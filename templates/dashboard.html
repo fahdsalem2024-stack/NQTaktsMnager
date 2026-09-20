@@ -364,8 +364,8 @@
                                 <span>{{ trainer.count }} عميل</span>
                             </div>
                             <div class="progress" style="height: 8px;">
-                                {% set max_count = trainer_distribution[0]['count'] if trainer_distribution else 1 %}
-                                <div class="progress-bar bg-primary" role="progressbar" 
+                                {% set max_count = [trainer_distribution|map(attribute='count')|max, 1]|max %}
+                                <div class="progress-bar bg-primary" role="progressbar"
                                      style="width: {{ (trainer.count / max_count * 100)|round }}%;">
                                 </div>
                             </div>
