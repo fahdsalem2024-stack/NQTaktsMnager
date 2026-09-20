@@ -28,8 +28,20 @@ def hash_password(password):
     return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 def verify_password(password, hashed):
-    """التحقق من كلمة المرور"""
-    return hashlib.sha256(password.encode()).hexdigest() == hashed
+    """التحقق من كلمة المرور - يدعم bcrypt و SHA-256 (للتوافق مع القديم)"""
+    if not hashed:
+        return False
+    
+    # bcrypt (الصيغة الحديثة)
+    if hashed.startswith('$2b$') or hashed.startswith('$2a$') or hashed.startswith('$2y$'):
+        try:
+            return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+        except Exception as e:
+            print(f"❌ خطأ في bcrypt: {e}")
+            return False
+    else:
+        # SHA-256 (الصيغة القديمة - للتوافق فقط)
+        return hashlib.sha256(password.encode()).hexdigest() == hashed
 
 def get_user_permissions(user_id):
     """جلب جميع صلاحيات المستخدم (من دوره + صلاحياته الخاصة)"""
