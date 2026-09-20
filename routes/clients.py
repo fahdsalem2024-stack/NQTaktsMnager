@@ -207,7 +207,7 @@ def client_tasks(client_id):
     tasks = conn.execute('''
         SELECT tasks.*, trainers.name as assigned_name
         FROM tasks
-        LEFT JOIN trainers ON tasks.assigned_to = trainers.id
+        LEFT JOIN trainers ON tasks.trainer_id = trainers.id
         WHERE tasks.client_id = ?
         ORDER BY tasks.due_date ASC
     ''', (client_id,)).fetchall()
@@ -249,7 +249,7 @@ def print_client_tasks(client_id):
     tasks = conn.execute('''
         SELECT tasks.*, trainers.name as assigned_name
         FROM tasks
-        LEFT JOIN trainers ON tasks.assigned_to = trainers.id
+        LEFT JOIN trainers ON tasks.trainer_id = trainers.id
         WHERE tasks.client_id = ?
         ORDER BY tasks.due_date ASC
     ''', (client_id,)).fetchall()

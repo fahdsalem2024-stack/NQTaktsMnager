@@ -1,10 +1,10 @@
 # routes/trainers.py
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from models import get_db
-import sqlite3
 import math
 
 trainers_bp = Blueprint('trainers', __name__, url_prefix='/trainers')
+
 
 # ===== عرض قائمة المدربين =====
 @trainers_bp.route('/')
@@ -12,7 +12,6 @@ def index():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
-    # ===== خيارات العرض والترقيم =====
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
     search = request.args.get('search', '').strip()
@@ -23,7 +22,6 @@ def index():
     
     conn = get_db()
     
-    # ===== بناء الاستعلام =====
     query = '''
         SELECT t.*, COUNT(ct.client_id) as client_count 
         FROM trainers t
@@ -39,7 +37,6 @@ def index():
     
     query += ' GROUP BY t.id ORDER BY t.name'
     
-    # ===== إجمالي النتائج =====
     count_query = '''
         SELECT COUNT(DISTINCT t.id) as count
         FROM trainers t
@@ -53,7 +50,6 @@ def index():
     
     total = conn.execute(count_query, count_params).fetchone()['count']
     
-    # ===== ترقيم =====
     if per_page != 999999:
         query += ' LIMIT ? OFFSET ?'
         offset = (page - 1) * per_page
@@ -82,6 +78,9 @@ def index():
 # ===== عرض تفاصيل مدرب =====
 @trainers_bp.route('/<int:trainer_id>')
 def details(trainer_id):
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
     conn = get_db()
     trainer = conn.execute('SELECT * FROM trainers WHERE id = ?', (trainer_id,)).fetchone()
     
@@ -104,6 +103,9 @@ def details(trainer_id):
 # ===== إضافة مدرب جديد =====
 @trainers_bp.route('/add', methods=['GET', 'POST'])
 def add():
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
     if request.method == 'POST':
         name = request.form.get('name')
         phone = request.form.get('phone')
@@ -133,6 +135,9 @@ def add():
 # ===== تعديل مدرب =====
 @trainers_bp.route('/edit/<int:trainer_id>', methods=['GET', 'POST'])
 def edit(trainer_id):
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
     conn = get_db()
     trainer = conn.execute('SELECT * FROM trainers WHERE id = ?', (trainer_id,)).fetchone()
     
@@ -170,6 +175,9 @@ def edit(trainer_id):
 # ===== حذف مدرب =====
 @trainers_bp.route('/delete/<int:trainer_id>', methods=['POST'])
 def delete(trainer_id):
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
     conn = get_db()
     
     clients = conn.execute('SELECT COUNT(*) as count FROM client_trainers WHERE trainer_id = ?', (trainer_id,)).fetchone()
