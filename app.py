@@ -8,7 +8,6 @@ from utils import get_company_settings, get_lang, t, log_activity
 from datetime import datetime
 
 
-
 # ===== إنشاء التطبيق =====
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -54,9 +53,7 @@ def utility_processor():
         'settings': settings
     }
 
-# ============================================================
-# ===== الصفحة الرئيسية =====
-# ============================================================
+
 # ============================================================
 # ===== الصفحة الرئيسية / Dashboard =====
 # ============================================================
@@ -68,38 +65,75 @@ def index():
     
     conn = get_db()
     
-    # ===== إحصائيات سريعة =====
+    # ===== استعلام واحد للإحصائيات الأساسية (أسرع) =====
+    stats_row = conn.execute('''
+        SELECT 
+            (SELECT COUNT(*) FROM clients) as clients,
+            (SELECT COUNT(*) FROM trainers) as trainers,
+            (SELECT COUNT(*) FROM tasks) as tasks,
+            (SELECT COUNT(*) FROM client_contracts) as contracts,
+            (SELECT COUNT(*) FROM client_payments) as payments,
+            (SELECT COUNT(*) FROM meetings) as meetings,
+            (SELECT COUNT(*) FROM users) as users,
+            (SELECT COUNT(*) FROM client_modules) as modules
+    ''').fetchone()
+    
     stats = {
-        'clients': conn.execute('SELECT COUNT(*) as count FROM clients').fetchone()['count'],
-        'trainers': conn.execute('SELECT COUNT(*) as count FROM trainers').fetchone()['count'],
-        'tasks': conn.execute('SELECT COUNT(*) as count FROM tasks').fetchone()['count'],
-        'contracts': conn.execute('SELECT COUNT(*) as count FROM client_contracts').fetchone()['count'],
-        'payments': conn.execute('SELECT COUNT(*) as count FROM client_payments').fetchone()['count'],
-        'meetings': conn.execute('SELECT COUNT(*) as count FROM meetings').fetchone()['count'],
-        'users': conn.execute('SELECT COUNT(*) as count FROM users').fetchone()['count'],
-        'modules': conn.execute('SELECT COUNT(*) as count FROM client_modules').fetchone()['count']
+        'clients': stats_row['clients'],
+        'trainers': stats_row['trainers'],
+        'tasks': stats_row['tasks'],
+        'contracts': stats_row['contracts'],
+        'payments': stats_row['payments'],
+        'meetings': stats_row['meetings'],
+        'users': stats_row['users'],
+        'modules': stats_row['modules']
     }
     
-    # ===== المهام حسب الحالة =====
+    # ===== استعلام واحد لحالات المهام =====
+    tasks_row = conn.execute('''
+        SELECT 
+            SUM(CASE WHEN status = 'مكتملة' THEN 1 ELSE 0 END) as completed,
+            SUM(CASE WHEN status = 'قيد التنفيذ' THEN 1 ELSE 0 END) as in_progress,
+            SUM(CASE WHEN status = 'لم تبدأ' THEN 1 ELSE 0 END) as not_started,
+            SUM(CASE WHEN due_date < date('now') AND status != 'مكتملة' THEN 1 ELSE 0 END) as overdue
+        FROM tasks
+    ''').fetchone()
+    
     tasks_by_status = {
-        'completed': conn.execute('SELECT COUNT(*) as count FROM tasks WHERE status = "مكتملة"').fetchone()['count'],
-        'in_progress': conn.execute('SELECT COUNT(*) as count FROM tasks WHERE status = "قيد التنفيذ"').fetchone()['count'],
-        'overdue': conn.execute('SELECT COUNT(*) as count FROM tasks WHERE due_date < date("now") AND status != "مكتملة"').fetchone()['count'],
-        'not_started': conn.execute('SELECT COUNT(*) as count FROM tasks WHERE status = "لم تبدأ"').fetchone()['count']
+        'completed': tasks_row['completed'] or 0,
+        'in_progress': tasks_row['in_progress'] or 0,
+        'overdue': tasks_row['overdue'] or 0,
+        'not_started': tasks_row['not_started'] or 0
     }
     
-    # ===== العقود حسب الحالة =====
+    # ===== استعلام واحد لحالات العقود =====
+    contracts_row = conn.execute('''
+        SELECT 
+            SUM(CASE WHEN status = 'نشط' THEN 1 ELSE 0 END) as active,
+            SUM(CASE WHEN status = 'معلق' THEN 1 ELSE 0 END) as pending,
+            SUM(CASE WHEN status = 'منتهي' THEN 1 ELSE 0 END) as completed
+        FROM client_contracts
+    ''').fetchone()
+    
     contracts_by_status = {
-        'active': conn.execute('SELECT COUNT(*) as count FROM client_contracts WHERE status = "نشط"').fetchone()['count'],
-        'pending': conn.execute('SELECT COUNT(*) as count FROM client_contracts WHERE status = "معلق"').fetchone()['count'],
-        'completed': conn.execute('SELECT COUNT(*) as count FROM client_contracts WHERE status = "منتهي"').fetchone()['count']
+        'active': contracts_row['active'] or 0,
+        'pending': contracts_row['pending'] or 0,
+        'completed': contracts_row['completed'] or 0
     }
     
-    # ===== المدفوعات =====
+    # ===== استعلام واحد للمدفوعات =====
+    payments_row = conn.execute('''
+        SELECT 
+            SUM(CASE WHEN status = 'مدفوع' THEN amount ELSE 0 END) as total,
+            SUM(CASE WHEN status = 'معلق' THEN amount ELSE 0 END) as pending,
+            SUM(CASE WHEN status = 'متأخر' THEN amount ELSE 0 END) as overdue
+        FROM client_payments
+    ''').fetchone()
+    
     payments_stats = {
-        'total': conn.execute('SELECT SUM(amount) as total FROM client_payments WHERE status = "مدفوع"').fetchone()['total'] or 0,
-        'pending': conn.execute('SELECT SUM(amount) as total FROM client_payments WHERE status = "معلق"').fetchone()['total'] or 0,
-        'overdue': conn.execute('SELECT SUM(amount) as total FROM client_payments WHERE status = "متأخر"').fetchone()['total'] or 0
+        'total': payments_row['total'] or 0,
+        'pending': payments_row['pending'] or 0,
+        'overdue': payments_row['overdue'] or 0
     }
     
     # ===== آخر 5 عقود =====
@@ -112,15 +146,15 @@ def index():
     
     # ===== آخر 5 مهام =====
     recent_tasks = conn.execute('''
-    SELECT tasks.*, clients.name as client_name, 
-           trainers.name as trainer_name,
-           users.name as assigned_user_name
-    FROM tasks
-    JOIN clients ON tasks.client_id = clients.id
-    LEFT JOIN trainers ON tasks.trainer_id = trainers.id
-    LEFT JOIN users ON tasks.assigned_user_id = users.id
-    ORDER BY tasks.created_at DESC LIMIT 5
-''').fetchall()
+        SELECT tasks.*, clients.name as client_name, 
+               trainers.name as trainer_name,
+               users.name as assigned_user_name
+        FROM tasks
+        JOIN clients ON tasks.client_id = clients.id
+        LEFT JOIN trainers ON tasks.trainer_id = trainers.id
+        LEFT JOIN users ON tasks.assigned_user_id = users.id
+        ORDER BY tasks.created_at DESC LIMIT 5
+    ''').fetchall()
     
     # ===== آخر 5 أنشطة =====
     recent_activities = conn.execute('''
@@ -140,6 +174,21 @@ def index():
         LIMIT 5
     ''').fetchall()
     
+    # ✅ حساب max_count لتفادي القسمة على صفر
+    max_count = max([t['count'] for t in trainer_distribution], default=1) if trainer_distribution else 1
+    
+    # ===== إحصائيات إضافية للـ Dashboard المتقدم =====
+    monthly_revenue = conn.execute('''
+        SELECT COALESCE(SUM(amount), 0) as total 
+        FROM client_payments 
+        WHERE status = 'مدفوع' 
+        AND payment_date >= date('now', '-30 days')
+    ''').fetchone()['total']
+    
+    overdue_count = tasks_by_status['overdue']
+    total_tasks = stats['tasks']
+    completion_rate = round((tasks_by_status['completed'] / total_tasks * 100), 1) if total_tasks > 0 else 0
+    
     conn.close()
     settings = get_company_settings()
     
@@ -152,8 +201,12 @@ def index():
                          recent_tasks=recent_tasks,
                          recent_activities=recent_activities,
                          trainer_distribution=trainer_distribution,
+                         max_count=max_count,
+                         monthly_revenue=monthly_revenue,
+                         completion_rate=completion_rate,
                          settings=settings,
                          datetime=datetime)
+
 
 # ============================================================
 # ===== المدربين - مسارات مباشرة =====
@@ -361,12 +414,12 @@ def client_tasks_page(client_id):
         return redirect(url_for('clients.clients'))
     
     tasks = conn.execute('''
-    SELECT tasks.*, trainers.name as assigned_name
-    FROM tasks
-    LEFT JOIN trainers ON tasks.trainer_id = trainers.id
-    WHERE tasks.client_id = ?
-    ORDER BY tasks.due_date ASC
-''', (client_id,)).fetchall()
+        SELECT tasks.*, trainers.name as assigned_name
+        FROM tasks
+        LEFT JOIN trainers ON tasks.trainer_id = trainers.id
+        WHERE tasks.client_id = ?
+        ORDER BY tasks.due_date ASC
+    ''', (client_id,)).fetchall()
     conn.close()
     
     stats = {
@@ -601,19 +654,19 @@ def global_search():
     results['payments'] = payments
     
     tasks = conn.execute('''
-    SELECT tasks.id, tasks.title, tasks.status, tasks.due_date,
-           clients.name as client_name, clients.company_name,
-           trainers.name as trainer_name,
-           'task' as type
-    FROM tasks
-    JOIN clients ON tasks.client_id = clients.id
-    LEFT JOIN trainers ON tasks.trainer_id = trainers.id
-    WHERE clients.name LIKE ? 
-       OR clients.company_name LIKE ?
-       OR tasks.title LIKE ?
-       OR trainers.name LIKE ?
-    LIMIT 20
-''', (search_term, search_term, search_term, search_term)).fetchall()
+        SELECT tasks.id, tasks.title, tasks.status, tasks.due_date,
+               clients.name as client_name, clients.company_name,
+               trainers.name as trainer_name,
+               'task' as type
+        FROM tasks
+        JOIN clients ON tasks.client_id = clients.id
+        LEFT JOIN trainers ON tasks.trainer_id = trainers.id
+        WHERE clients.name LIKE ? 
+           OR clients.company_name LIKE ?
+           OR tasks.title LIKE ?
+           OR trainers.name LIKE ?
+        LIMIT 20
+    ''', (search_term, search_term, search_term, search_term)).fetchall()
     results['tasks'] = tasks
     
     trainers = conn.execute('''
@@ -657,21 +710,6 @@ def page_not_found(e):
 def internal_server_error(e):
     flash('❌ حدث خطأ في السيرفر. يرجى المحاولة مرة أخرى.', 'danger')
     return redirect(url_for('index'))
-
-
-# ============================================================
-# ===== مسارات اختبار =====
-# ============================================================
-
-@app.route('/trainers-test')
-def trainers_test():
-    return "Trainers route is working! (test)"
-
-
-@app.route('/trainers-direct')
-def trainers_direct():
-    from routes.trainers import trainers_bp
-    return "Direct import test"
 
 
 # ============================================================

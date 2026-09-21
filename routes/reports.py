@@ -1,9 +1,19 @@
 # routes/reports.py
-from flask import render_template, request, redirect, url_for, session, flash
+from flask import render_template, request, redirect, url_for, session, flash, send_file
 from datetime import datetime, timedelta
+from io import BytesIO
+import pandas as pd
 from models import get_db
 from routes import reports_bp
-from utils import check_role
+from utils import (
+    check_role,
+    export_contracts_to_excel,
+    export_payments_to_excel,
+    export_tasks_to_excel,
+    export_clients_to_excel,
+    export_full_report,
+)
+
 
 @reports_bp.route('/reports')
 def reports():
@@ -43,6 +53,7 @@ def reports():
                          weekly_revenue=weekly_revenue,
                          daily_revenue=daily_revenue)
 
+
 @reports_bp.route('/revenue_report')
 def revenue_report():
     if 'user_id' not in session:
@@ -75,6 +86,7 @@ def revenue_report():
                          total_revenue=total_revenue,
                          revenue_by_client=revenue_by_client,
                          revenue_by_month=revenue_by_month)
+
 
 @reports_bp.route('/contracts_report')
 def contracts_report():
@@ -122,6 +134,7 @@ def contracts_report():
                          contracts=contracts,
                          contract_types=contract_types)
 
+
 @reports_bp.route('/contract_payments_report/<int:contract_id>')
 def contract_payments_report(contract_id):
     if 'user_id' not in session:
@@ -167,6 +180,7 @@ def contract_payments_report(contract_id):
         flash(f'❌ حدث خطأ: {str(e)}', 'danger')
         return redirect(url_for('reports_bp.contracts_report'))
 
+
 @reports_bp.route('/advanced_reports')
 def advanced_reports():
     if 'user_id' not in session:
@@ -174,7 +188,6 @@ def advanced_reports():
     
     conn = get_db()
     
-    # ===== توقعات الإيرادات =====
     revenue_forecast = []
     for i in range(1, 7):
         month = (datetime.now().replace(day=1) + timedelta(days=i*30)).strftime('%Y-%m')
@@ -199,7 +212,6 @@ def advanced_reports():
             'percentage': percentage
         })
     
-    # ===== أفضل العملاء =====
     top_clients = []
     top_clients_data = conn.execute('''
         SELECT clients.id, clients.name,
@@ -223,7 +235,6 @@ def advanced_reports():
             'remaining': (row['total_amount'] or 0) - (row['paid_amount'] or 0)
         })
     
-    # ===== أداء المدربين =====
     trainer_performance = []
     trainer_data = conn.execute('''
         SELECT trainers.id, trainers.name,
@@ -258,3 +269,141 @@ def advanced_reports():
                          revenue_forecast=revenue_forecast,
                          top_clients=top_clients,
                          trainer_performance=trainer_performance)
+
+
+# ============================================================
+# ===== تصدير التقارير إلى Excel =====
+# ============================================================
+
+@reports_bp.route('/export/contracts')
+def export_contracts():
+    """تصدير العقود إلى Excel"""
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    conn = get_db()
+    contracts = conn.execute('''
+        SELECT client_contracts.*, 
+               clients.name as client_name,
+               clients.company_name,
+               contract_types.name as contract_type_name
+        FROM client_contracts
+        JOIN clients ON client_contracts.client_id = clients.id
+        LEFT JOIN contract_types ON client_contracts.contract_type_id = contract_types.id
+        ORDER BY client_contracts.created_at DESC
+    ''').fetchall()
+    conn.close()
+    
+    output = export_contracts_to_excel(contracts)
+    
+    return send_file(
+        output,
+        download_name=f'العقود_{datetime.now().strftime("%Y%m%d")}.xlsx',
+        as_attachment=True,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+
+@reports_bp.route('/export/payments')
+def export_payments():
+    """تصدير المدفوعات إلى Excel"""
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    conn = get_db()
+    payments = conn.execute('''
+        SELECT client_payments.*, 
+               clients.name as client_name,
+               clients.company_name,
+               client_modules.name as module_name
+        FROM client_payments
+        LEFT JOIN clients ON client_payments.client_id = clients.id
+        LEFT JOIN client_modules ON client_payments.module_id = client_modules.id
+        ORDER BY client_payments.created_at DESC
+    ''').fetchall()
+    conn.close()
+    
+    output = export_payments_to_excel(payments)
+    
+    return send_file(
+        output,
+        download_name=f'المدفوعات_{datetime.now().strftime("%Y%m%d")}.xlsx',
+        as_attachment=True,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+
+@reports_bp.route('/export/tasks')
+def export_tasks():
+    """تصدير المهام إلى Excel"""
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    conn = get_db()
+    tasks = conn.execute('''
+        SELECT tasks.*, 
+               clients.name as client_name,
+               trainers.name as trainer_name,
+               users.name as assigned_user_name
+        FROM tasks
+        JOIN clients ON tasks.client_id = clients.id
+        LEFT JOIN trainers ON tasks.trainer_id = trainers.id
+        LEFT JOIN users ON tasks.assigned_user_id = users.id
+        ORDER BY tasks.created_at DESC
+    ''').fetchall()
+    conn.close()
+    
+    output = export_tasks_to_excel(tasks)
+    
+    return send_file(
+        output,
+        download_name=f'المهام_{datetime.now().strftime("%Y%m%d")}.xlsx',
+        as_attachment=True,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+
+@reports_bp.route('/export/clients')
+def export_clients():
+    """تصدير العملاء إلى Excel"""
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    conn = get_db()
+    clients = conn.execute('''
+        SELECT clients.*,
+               GROUP_CONCAT(trainers.name, ', ') as trainer_names
+        FROM clients
+        LEFT JOIN client_trainers ON clients.id = client_trainers.client_id
+        LEFT JOIN trainers ON client_trainers.trainer_id = trainers.id
+        GROUP BY clients.id
+        ORDER BY clients.name
+    ''').fetchall()
+    conn.close()
+    
+    output = export_clients_to_excel(clients)
+    
+    return send_file(
+        output,
+        download_name=f'العملاء_{datetime.now().strftime("%Y%m%d")}.xlsx',
+        as_attachment=True,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+
+@reports_bp.route('/export/all')
+def export_all():
+    """تصدير كل البيانات إلى Excel (ملف واحد بعدة أوراق)"""
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    conn = get_db()
+    output = export_full_report(conn)
+    conn.close()
+    
+    return send_file(
+        output,
+        download_name=f'تقرير_شامل_{datetime.now().strftime("%Y%m%d")}.xlsx',
+        as_attachment=True,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )

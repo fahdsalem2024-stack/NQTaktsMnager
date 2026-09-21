@@ -21,5 +21,15 @@ from .utils import (
     get_safe_file_path,
 )
 
+# ===== Excel Export =====
+from .excel_export import (
+    export_to_excel,
+    export_contracts_to_excel,
+    export_payments_to_excel,
+    export_tasks_to_excel,
+    export_clients_to_excel,
+    export_full_report,
+)
+
 # استيراد الديكورات من decorators.py
 from .decorators import login_required, role_required, permission_required
