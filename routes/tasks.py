@@ -476,7 +476,7 @@ def update_task_status_form(task_id):
     return render_template('update_task_status.html', task=task)
 
 
-@@tasks_bp.route('/add_note/<int:task_id>', methods=['POST'])
+@tasks_bp.route('/add_note/<int:task_id>', methods=['POST'])
 @login_required
 @permission_required('tasks.edit')
 def add_note(task_id):
