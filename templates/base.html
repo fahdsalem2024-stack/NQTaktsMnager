@@ -332,7 +332,6 @@
         /* 📱 MOBILE OPTIMIZATIONS */
         /* ============================================================ */
 
-        /* ===== التابلت (992px وأقل) ===== */
         @media (max-width: 992px) {
             .search-input {
                 width: 100%;
@@ -352,9 +351,7 @@
             }
         }
 
-        /* ===== الموبايل (768px وأقل) ===== */
         @media (max-width: 767px) {
-            /* ===== Top Bar ===== */
             .top-bar {
                 padding: 4px 0;
             }
@@ -373,14 +370,12 @@
                     gap: 6px;
                 }
 
-            /* ===== شريط البحث ===== */
             .search-input {
                 width: 100%;
                 padding: 8px 14px;
                 font-size: 13px;
             }
 
-            /* ===== Top Bar Nav ===== */
             .top-bar .nav-link {
                 padding: 4px 8px;
                 font-size: 12px;
@@ -390,14 +385,12 @@
                     font-size: 16px;
                 }
 
-            /* ===== الـ Avatar ===== */
             .user-avatar {
                 width: 32px;
                 height: 32px;
                 font-size: 13px;
             }
 
-            /* ===== Main Nav - Hamburger ===== */
             .main-nav .navbar-toggler {
                 border-color: rgba(255,255,255,0.3);
                 padding: 4px 8px;
@@ -441,7 +434,6 @@
                 font-size: 13px;
             }
 
-            /* ===== Main Content ===== */
             main {
                 padding: 0.5rem 0.5rem !important;
             }
@@ -450,7 +442,6 @@
                     font-size: 1.3rem;
                 }
 
-            /* ===== البطاقات ===== */
             .card {
                 border-radius: 12px;
                 margin-bottom: 0.75rem;
@@ -468,7 +459,6 @@
                 padding: 1rem;
             }
 
-            /* ===== الفوتر ===== */
             .footer {
                 padding: 12px 0;
                 font-size: 0.8rem;
@@ -479,7 +469,6 @@
                     line-height: 1.6;
                 }
 
-            /* ===== الأزرار ===== */
             .btn {
                 font-size: 0.85rem;
                 padding: 0.4rem 1rem;
@@ -490,7 +479,6 @@
                 padding: 0.3rem 0.75rem;
             }
 
-            /* ===== الجداول ===== */
             .table {
                 font-size: 0.8rem;
             }
@@ -500,7 +488,6 @@
                     padding: 0.5rem;
                 }
 
-            /* ===== النماذج ===== */
             .form-control,
             .form-select {
                 font-size: 0.9rem;
@@ -514,7 +501,6 @@
             }
         }
 
-        /* ===== الموبايل الصغير (480px وأقل) ===== */
         @media (max-width: 479px) {
             .top-bar .navbar-brand span {
                 font-size: 0.9rem;
@@ -546,13 +532,10 @@
 </head>
 <body>
 
-    <!-- ============================================================ -->
     <!-- ===== الشريط العلوي (Top Bar) ===== -->
-    <!-- ============================================================ -->
     <nav class="navbar navbar-expand-lg top-bar">
         <div class="container-fluid">
 
-            <!-- ===== اللوجو واسم الشركة ===== -->
             <a class="navbar-brand" href="/">
                 {% if settings and settings.logo_path %}
                 <img src="{{ url_for('static', filename=settings.logo_path) }}" alt="{{ settings.name }}">
@@ -575,22 +558,19 @@
             <div class="collapse navbar-collapse" id="topBarNav">
                 {% if session.user_id %}
 
-                <!-- ===== شريط البحث ===== -->
                 <form class="d-flex mx-auto my-2 my-lg-0" action="/global_search" method="GET">
                     <input class="form-control search-input" type="search"
-                           placeholder="🔍 بحث شامل عن عميل، شركة، عقد، تدريب..."
+                           placeholder="{{ t('search_placeholder') }}"
                            name="q"
                            value="{{ request.args.get('q', '') }}"
-                           aria-label="بحث">
+                           aria-label="{{ t('search') }}">
                     <button class="btn btn-primary ms-2" type="submit" style="border-radius: 30px; padding: 0 20px;">
                         <i class="bi bi-search"></i>
                     </button>
                 </form>
 
-                <!-- ===== الجانب الأيمن (إشعارات - لغة - مستخدم) ===== -->
                 <ul class="navbar-nav ms-auto align-items-center gap-2">
 
-                    <!-- ===== الإشعارات ===== -->
                     <li class="nav-item notification-badge">
                         <a class="nav-link" href="/notifications">
                             <i class="bi bi-bell"></i>
@@ -598,10 +578,9 @@
                         </a>
                     </li>
 
-                    <!-- ===== اللغة ===== -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="bi bi-globe2"></i> <span class="d-none d-md-inline">اللغة</span>
+                            <i class="bi bi-globe2"></i> <span class="d-none d-md-inline">{{ t('language') }}</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0">
                             <li>
@@ -617,7 +596,6 @@
                         </ul>
                     </li>
 
-                    <!-- ===== المستخدم ===== -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" data-bs-toggle="dropdown">
                             <div class="user-avatar">
@@ -640,12 +618,12 @@
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <a class="dropdown-item" href="/change_password">
-                                    <i class="bi bi-key text-warning"></i> تغيير كلمة المرور
+                                    <i class="bi bi-key text-warning"></i> {{ t('change_password') }}
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item text-danger" href="/logout">
-                                    <i class="bi bi-box-arrow-right"></i> تسجيل خروج
+                                    <i class="bi bi-box-arrow-right"></i> {{ t('logout') }}
                                 </a>
                             </li>
                         </ul>
@@ -657,13 +635,10 @@
         </div>
     </nav>
 
-    <!-- ============================================================ -->
     <!-- ===== الشريط السفلي (Main Navigation) ===== -->
-    <!-- ============================================================ -->
     {% if session.user_id %}
     <nav class="navbar navbar-expand-lg main-nav">
         <div class="container-fluid">
-            <!-- ✅ زر الـ Hamburger للموبايل -->
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -671,106 +646,98 @@
             <div class="collapse navbar-collapse" id="mainNav">
                 <ul class="navbar-nav flex-wrap">
 
-                    <!-- ===== الرئيسية ===== -->
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="/">
-                            <i class="bi bi-house"></i> الرئيسية
+                            <i class="bi bi-house"></i> {{ t('home') }}
                         </a>
                     </li>
 
-                    <!-- ===== الإدارة ===== -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="bi bi-folder2-open"></i> الإدارة
+                            <i class="bi bi-folder2-open"></i> {{ t('management') }}
                         </a>
                         <ul class="dropdown-menu shadow-lg border-0">
                             <li>
                                 <a class="dropdown-item" href="/clients">
-                                    <i class="bi bi-people text-primary"></i> العملاء
+                                    <i class="bi bi-people text-primary"></i> {{ t('clients') }}
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item" href="/trainers">
-                                    <i class="bi bi-person-badge text-success"></i> المدربين
+                                    <i class="bi bi-person-badge text-success"></i> {{ t('trainers') }}
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item" href="/users">
-                                    <i class="bi bi-person-gear text-danger"></i> المستخدمين
+                                    <i class="bi bi-person-gear text-danger"></i> {{ t('users') }}
                                 </a>
                             </li>
                         </ul>
                     </li>
 
-                    <!-- ===== العقود ===== -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="bi bi-file-earmark-text"></i> العقود
+                            <i class="bi bi-file-earmark-text"></i> {{ t('contracts') }}
                         </a>
                         <ul class="dropdown-menu shadow-lg border-0">
                             <li>
                                 <a class="dropdown-item" href="/contracts">
-                                    <i class="bi bi-file-earmark-text text-primary"></i> العقود
+                                    <i class="bi bi-file-earmark-text text-primary"></i> {{ t('contracts') }}
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item" href="/contract_types">
-                                    <i class="bi bi-tags text-success"></i> أنواع العقود
+                                    <i class="bi bi-tags text-success"></i> {{ t('contract_types') }}
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item" href="/module_types">
-                                    <i class="bi bi-grid text-warning"></i> أنواع المديولات
+                                    <i class="bi bi-grid text-warning"></i> {{ t('module_types') }}
                                 </a>
                             </li>
                         </ul>
                     </li>
 
-                    <!-- ===== المدفوعات ===== -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="bi bi-coin"></i> المدفوعات
+                            <i class="bi bi-coin"></i> {{ t('payments') }}
                         </a>
                         <ul class="dropdown-menu shadow-lg border-0">
                             <li>
                                 <a class="dropdown-item" href="/all_payments">
-                                    <i class="bi bi-coin text-success"></i> المدفوعات
+                                    <i class="bi bi-coin text-success"></i> {{ t('payments') }}
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item" href="/revenue_report">
-                                    <i class="bi bi-graph-up-arrow text-info"></i> الإيرادات
+                                    <i class="bi bi-graph-up-arrow text-info"></i> {{ t('revenue') }}
                                 </a>
                             </li>
                         </ul>
                     </li>
 
-                    <!-- ===== التدريبات ===== -->
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/tasks' %}active{% endif %}" href="/tasks">
-                            <i class="bi bi-list-task"></i> التدريبات
+                            <i class="bi bi-list-task"></i> {{ t('tasks') }}
                         </a>
                     </li>
 
-                    <!-- ===== المواعيد ===== -->
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/meetings' %}active{% endif %}" href="/meetings">
-                            <i class="bi bi-calendar-event"></i> المواعيد
+                            <i class="bi bi-calendar-event"></i> {{ t('meetings') }}
                         </a>
                     </li>
 
-                    <!-- ===== التقارير ===== -->
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/reports' %}active{% endif %}" href="/reports">
-                            <i class="bi bi-bar-chart"></i> التقارير
+                            <i class="bi bi-bar-chart"></i> {{ t('reports') }}
                         </a>
                     </li>
 
-                    <!-- ===== الإعدادات ===== -->
                     {% if session.user_role == 'مدير' %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/company_settings' %}active{% endif %}" href="/company_settings">
-                            <i class="bi bi-gear"></i> الإعدادات
+                            <i class="bi bi-gear"></i> {{ t('settings') }}
                         </a>
                     </li>
                     {% endif %}
@@ -781,9 +748,7 @@
     </nav>
     {% endif %}
 
-    <!-- ============================================================ -->
     <!-- ===== المحتوى ===== -->
-    <!-- ============================================================ -->
     <main class="container-fluid py-2">
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -799,21 +764,17 @@
         {% block content %}{% endblock %}
     </main>
 
-    <!-- ============================================================ -->
     <!-- ===== Footer ===== -->
-    <!-- ============================================================ -->
     <div class="footer text-center py-3">
         <small>
             <i class="bi bi-building"></i> {{ settings.name if settings else t('app_name') }}
             {% if settings and settings.phone %} | <i class="bi bi-telephone"></i> {{ settings.phone }}{% endif %}
             {% if settings and settings.address %} | <i class="bi bi-geo-alt"></i> {{ settings.address }}{% endif %}
-            <br>© {{ datetime.now().year if datetime else 2026 }} جميع الحقوق محفوظة
+            <br>© {{ datetime.now().year if datetime else 2026 }} {{ t('all_rights_reserved') }}
         </small>
     </div>
 
-    <!-- ============================================================ -->
     <!-- ===== Scripts ===== -->
-    <!-- ============================================================ -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
                 fetch('/api/notifications/count')
