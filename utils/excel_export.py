@@ -134,7 +134,6 @@ def export_full_report(conn):
     
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        # ورقة العقود
         contracts_data = [{
             'رقم العقد': c['contract_number'],
             'العميل': c['client_name'],
@@ -147,7 +146,6 @@ def export_full_report(conn):
         } for c in contracts]
         pd.DataFrame(contracts_data).to_excel(writer, index=False, sheet_name='العقود')
         
-        # ورقة المدفوعات
         payments_data = [{
             'العميل': p['client_name'],
             'الشركة': p['company_name'] or '',
@@ -158,7 +156,6 @@ def export_full_report(conn):
         } for p in payments]
         pd.DataFrame(payments_data).to_excel(writer, index=False, sheet_name='المدفوعات')
         
-        # ورقة المهام
         tasks_data = [{
             'العنوان': t['title'],
             'العميل': t['client_name'],
@@ -168,7 +165,6 @@ def export_full_report(conn):
         } for t in tasks]
         pd.DataFrame(tasks_data).to_excel(writer, index=False, sheet_name='المهام')
         
-        # ورقة العملاء
         clients_list = [{
             'الاسم': c['name'],
             'الشركة': c['company_name'] or '',
