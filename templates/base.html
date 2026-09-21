@@ -1,4 +1,4 @@
-﻿﻿{% set lang = get_lang() %}
+﻿﻿﻿{% set lang = get_lang() %}
 <!DOCTYPE html>
 <html dir="{% if lang == 'ar' %}rtl{% else %}ltr{% endif %}" lang="{{ lang }}">
 <head>
@@ -8,11 +8,11 @@
 
     <!-- ===== أيقونة الموقع ===== -->
     {% if settings and settings.favicon_path %}
-        <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename=settings.favicon_path) }}">
-        <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename=settings.favicon_path) }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename=settings.favicon_path) }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename=settings.favicon_path) }}">
     {% else %}
-        <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
-        <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     {% endif %}
 
     <!-- Bootstrap 5 & Icons -->
@@ -26,6 +26,14 @@
             font-family: 'Tajawal', sans-serif;
         }
 
+        html, body {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             background: #F8FAFC;
             color: #1a1a2e;
@@ -37,31 +45,49 @@
             font-weight: 700;
         }
 
+        /* ===== إزالة الهوامش من الـ containers ===== */
+        .container-fluid {
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+            max-width: 100%;
+        }
+
+        /* على الشاشات الكبيرة جداً */
+        @media (min-width: 1800px) {
+            .container-fluid {
+                padding-left: 3rem;
+                padding-right: 3rem;
+            }
+        }
+
         /* ===== Navbar العلوي (Top Bar) ===== */
         .top-bar {
             background: #0F172A;
             padding: 8px 0;
             border-bottom: 1px solid #1E293B;
+            width: 100%;
+            margin: 0;
+            border-radius: 0;
         }
 
-        .top-bar .navbar-brand img {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-        }
+            .top-bar .navbar-brand img {
+                width: 48px;
+                height: 48px;
+                border-radius: 12px;
+            }
 
-        .top-bar .navbar-brand {
-            font-weight: 800;
-            font-size: 1.4rem;
-            color: white !important;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+            .top-bar .navbar-brand {
+                font-weight: 800;
+                font-size: 1.4rem;
+                color: white !important;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
 
-        .top-bar .navbar-brand span {
-            font-size: 1.5rem;
-        }
+                .top-bar .navbar-brand span {
+                    font-size: 1.5rem;
+                }
 
         /* ===== شريط البحث ===== */
         .search-input {
@@ -74,15 +100,15 @@
             transition: all 0.3s ease;
         }
 
-        .search-input::placeholder {
-            color: #94a3b8;
-        }
+            .search-input::placeholder {
+                color: #94a3b8;
+            }
 
-        .search-input:focus {
-            background: #334155;
-            box-shadow: none;
-            color: #fff;
-        }
+            .search-input:focus {
+                background: #334155;
+                box-shadow: none;
+                color: #fff;
+            }
 
         /* ===== الأيقونات العلوية ===== */
         .top-bar .nav-link {
@@ -93,14 +119,14 @@
             font-size: 14px;
         }
 
-        .top-bar .nav-link:hover {
-            color: #fff !important;
-            background: rgba(255,255,255,0.08);
-        }
+            .top-bar .nav-link:hover {
+                color: #fff !important;
+                background: rgba(255,255,255,0.08);
+            }
 
-        .top-bar .nav-link i {
-            font-size: 18px;
-        }
+            .top-bar .nav-link i {
+                font-size: 18px;
+            }
 
         /* ===== الإشعارات ===== */
         .notification-badge {
@@ -125,9 +151,17 @@
         }
 
         @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         /* ===== صورة المستخدم ===== */
@@ -162,57 +196,61 @@
             background: #1E293B;
             padding: 0;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            width: 100%;
+            margin: 0;
+            border-radius: 0;
         }
 
-        .main-nav .nav-link {
-            color: rgba(255,255,255,0.8) !important;
-            font-weight: 500;
-            padding: 12px 18px;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
+            .main-nav .nav-link {
+                color: rgba(255,255,255,0.8) !important;
+                font-weight: 500;
+                padding: 12px 18px;
+                border-radius: 10px;
+                transition: all 0.3s ease;
+                font-size: 14px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
 
-        .main-nav .nav-link i {
-            font-size: 18px;
-        }
+                .main-nav .nav-link i {
+                    font-size: 18px;
+                }
 
-        .main-nav .nav-link:hover {
-            background: #2563EB;
-            color: #fff !important;
-            transform: translateY(-2px);
-        }
+                .main-nav .nav-link:hover {
+                    background: #2563EB;
+                    color: #fff !important;
+                    transform: translateY(-2px);
+                }
 
-        .main-nav .nav-link.active {
-            background: #2563EB;
-            color: #fff !important;
-            border-radius: 12px;
-        }
+                .main-nav .nav-link.active {
+                    background: #2563EB;
+                    color: #fff !important;
+                    border-radius: 12px;
+                }
 
-        .main-nav .nav-item {
-            margin: 0 2px;
-        }
+            .main-nav .nav-item {
+                margin: 0 2px;
+            }
 
-        /* ===== Dropdown ===== */
-        .main-nav .dropdown-menu {
-            border: none;
-            border-radius: 16px;
-            padding: 12px;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
-            animation: fadeDropdown 0.2s ease;
-            background: white;
-            min-width: 240px;
-            margin-top: 8px;
-        }
+            /* ===== Dropdown ===== */
+            .main-nav .dropdown-menu {
+                border: none;
+                border-radius: 16px;
+                padding: 12px;
+                box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+                animation: fadeDropdown 0.2s ease;
+                background: white;
+                min-width: 240px;
+                margin-top: 8px;
+            }
 
         @keyframes fadeDropdown {
             from {
                 opacity: 0;
                 transform: translateY(10px);
             }
+
             to {
                 opacity: 1;
                 transform: none;
@@ -227,14 +265,14 @@
             font-size: 14px;
         }
 
-        .main-nav .dropdown-item:hover {
-            background: #f1f5f9;
-            transform: translateX(4px);
-        }
+            .main-nav .dropdown-item:hover {
+                background: #f1f5f9;
+                transform: translateX(4px);
+            }
 
-        .main-nav .dropdown-item i {
-            margin-left: 8px;
-        }
+            .main-nav .dropdown-item i {
+                margin-left: 8px;
+            }
 
         .main-nav .dropdown-toggle::after {
             margin-right: 6px;
@@ -248,9 +286,9 @@
             transition: all 0.3s ease;
         }
 
-        .card:hover {
-            box-shadow: 0 12px 40px rgba(0,0,0,0.1);
-        }
+            .card:hover {
+                box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+            }
 
         /* ===== Footer ===== */
         .footer {
@@ -259,10 +297,19 @@
             padding: 20px 0;
             margin-top: 3rem;
             border-top: 1px solid #1E293B;
+            width: 100%;
+            margin-left: 0;
+            margin-right: 0;
         }
 
-        .footer small {
-            color: #94a3b8 !important;
+            .footer small {
+                color: #94a3b8 !important;
+            }
+
+        /* ===== المحتوى الرئيسي ===== */
+        main {
+            width: 100%;
+            max-width: 100%;
         }
 
         /* ===== التجاوب ===== */
@@ -270,12 +317,15 @@
             .search-input {
                 width: 100%;
             }
+
             .main-nav .nav-link:hover {
                 transform: none;
             }
+
             .top-bar .navbar-brand span {
                 font-size: 1.1rem;
             }
+
             .top-bar .navbar-brand img {
                 width: 36px;
                 height: 36px;
@@ -287,14 +337,22 @@
                 padding: 8px 12px;
                 font-size: 13px;
             }
-            .main-nav .nav-link i {
-                font-size: 15px;
-            }
+
+                .main-nav .nav-link i {
+                    font-size: 15px;
+                }
+
             .dropdown-menu {
                 animation: none;
             }
+
             .top-bar .navbar-brand {
                 font-size: 1rem;
+            }
+
+            .container-fluid {
+                padding-left: 1rem;
+                padding-right: 1rem;
             }
         }
     </style>
@@ -305,7 +363,7 @@
     <!-- ===== الشريط العلوي (Top Bar) ===== -->
     <!-- ============================================================ -->
     <nav class="navbar navbar-expand-lg top-bar">
-        <div class="container">
+        <div class="container-fluid">
 
             <!-- ===== اللوجو واسم الشركة ===== -->
             <a class="navbar-brand" href="/">
@@ -316,9 +374,9 @@
                 {% endif %}
                 <span>
                     {% if get_lang() == 'en' and settings and settings.name_en %}
-                        {{ settings.name_en }}
+                    {{ settings.name_en }}
                     {% else %}
-                        {{ settings.name if settings else t('app_name') }}
+                    {{ settings.name if settings else t('app_name') }}
                     {% endif %}
                 </span>
             </a>
@@ -333,7 +391,7 @@
                 <!-- ===== شريط البحث ===== -->
                 <form class="d-flex mx-auto my-2 my-lg-0" action="/global_search" method="GET">
                     <input class="form-control search-input" type="search"
-                           placeholder="🔍 بحث شامل عن عميل، شركة، عقد، تدريب..." 
+                           placeholder="🔍 بحث شامل عن عميل، شركة، عقد، تدريب..."
                            name="q"
                            value="{{ request.args.get('q', '') }}"
                            aria-label="بحث">
@@ -413,11 +471,11 @@
     </nav>
 
     <!-- ============================================================ -->
-    <!-- ===== الشريط السفلي (Main Navigation) - الشكل المطلوب ===== -->
+    <!-- ===== الشريط السفلي (Main Navigation) ===== -->
     <!-- ============================================================ -->
     {% if session.user_id %}
     <nav class="navbar navbar-expand-lg main-nav">
-        <div class="container">
+        <div class="container-fluid">
             <div class="collapse navbar-collapse" id="mainNav">
                 <ul class="navbar-nav flex-wrap">
 
@@ -534,16 +592,16 @@
     <!-- ============================================================ -->
     <!-- ===== المحتوى ===== -->
     <!-- ============================================================ -->
-    <main class="container py-4">
+    <main class="container-fluid py-4">
         {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
         {% endwith %}
 
         {% block content %}{% endblock %}
@@ -566,18 +624,18 @@
     <!-- ============================================================ -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        fetch('/api/notifications/count')
-            .then(res => res.json())
-            .then(data => {
-                const badge = document.getElementById('notifCount');
-                if (data.count > 0) {
-                    badge.textContent = data.count;
-                    badge.style.display = 'flex';
-                } else {
-                    badge.style.display = 'none';
-                }
-            })
-            .catch(() => {});
+                fetch('/api/notifications/count')
+                    .then(res => res.json())
+                    .then(data => {
+                        const badge = document.getElementById('notifCount');
+                        if (data.count > 0) {
+                            badge.textContent = data.count;
+                            badge.style.display = 'flex';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    })
+                    .catch(() => {});
     </script>
 </body>
 </html>
