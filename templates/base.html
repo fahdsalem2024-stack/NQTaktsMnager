@@ -22,7 +22,7 @@
 
     <style>
         /* ============================================ */
-        /* ✅ الحل الجذري: إزالة كل الهوامش الافتراضية */
+        /* ✅ الأساسيات */
         /* ============================================ */
         html, body {
             margin: 0 !important;
@@ -46,7 +46,6 @@
             box-sizing: border-box;
         }
 
-        /* ✅ إزالة الهوامش من الـ navbar */
         .navbar {
             margin: 0 !important;
             border-radius: 0 !important;
@@ -54,7 +53,6 @@
             padding-right: 0 !important;
         }
 
-        /* ✅ تقليل padding الـ container */
         .container,
         .container-fluid {
             margin-left: 0 !important;
@@ -65,7 +63,6 @@
             width: 100% !important;
         }
 
-        /* ✅ المحتوى الرئيسي */
         main {
             width: 100% !important;
             max-width: 100% !important;
@@ -85,7 +82,7 @@
             font-weight: 700;
         }
 
-        /* ===== Navbar العلوي (Top Bar) ===== */
+        /* ===== Navbar العلوي ===== */
         .top-bar {
             background: #0F172A;
             padding: 8px 0;
@@ -216,7 +213,7 @@
             font-size: 13px;
         }
 
-        /* ===== Navbar السفلي (Main Nav) ===== */
+        /* ===== Navbar السفلي ===== */
         .main-nav {
             background: #1E293B;
             padding: 0;
@@ -303,7 +300,7 @@
             margin-right: 6px;
         }
 
-        /* ===== البطاقات (Cards) ===== */
+        /* ===== البطاقات ===== */
         .card {
             border: none;
             border-radius: 18px;
@@ -331,7 +328,11 @@
                 color: #94a3b8 !important;
             }
 
-        /* ===== التجاوب ===== */
+        /* ============================================================ */
+        /* 📱 MOBILE OPTIMIZATIONS */
+        /* ============================================================ */
+
+        /* ===== التابلت (992px وأقل) ===== */
         @media (max-width: 992px) {
             .search-input {
                 width: 100%;
@@ -351,28 +352,194 @@
             }
         }
 
-        @media (max-width: 768px) {
-            .main-nav .nav-link {
-                padding: 8px 12px;
+        /* ===== الموبايل (768px وأقل) ===== */
+        @media (max-width: 767px) {
+            /* ===== Top Bar ===== */
+            .top-bar {
+                padding: 4px 0;
+            }
+
+                .top-bar .navbar-brand img {
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 8px;
+                }
+
+                .top-bar .navbar-brand span {
+                    font-size: 1rem;
+                }
+
+                .top-bar .navbar-brand {
+                    gap: 6px;
+                }
+
+            /* ===== شريط البحث ===== */
+            .search-input {
+                width: 100%;
+                padding: 8px 14px;
                 font-size: 13px;
+            }
+
+            /* ===== Top Bar Nav ===== */
+            .top-bar .nav-link {
+                padding: 4px 8px;
+                font-size: 12px;
+            }
+
+                .top-bar .nav-link i {
+                    font-size: 16px;
+                }
+
+            /* ===== الـ Avatar ===== */
+            .user-avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 13px;
+            }
+
+            /* ===== Main Nav - Hamburger ===== */
+            .main-nav .navbar-toggler {
+                border-color: rgba(255,255,255,0.3);
+                padding: 4px 8px;
+                margin: 4px 8px;
+            }
+
+            .main-nav .navbar-toggler-icon {
+                background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255,255,255,0.8)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+            }
+
+            .main-nav .navbar-collapse {
+                padding: 8px 0;
+                max-height: 80vh;
+                overflow-y: auto;
+            }
+
+            .main-nav .nav-link {
+                padding: 10px 14px;
+                font-size: 13px;
+                border-radius: 8px;
             }
 
                 .main-nav .nav-link i {
                     font-size: 15px;
                 }
 
-            .dropdown-menu {
-                animation: none;
+            .main-nav .nav-item {
+                margin: 0;
+                width: 100%;
             }
 
-            .top-bar .navbar-brand {
-                font-size: 1rem;
+            .main-nav .dropdown-menu {
+                animation: none;
+                margin: 4px 8px;
+                padding: 6px;
+                min-width: auto;
+            }
+
+            .main-nav .dropdown-item {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+
+            /* ===== Main Content ===== */
+            main {
+                padding: 0.5rem 0.5rem !important;
+            }
+
+                main h2 {
+                    font-size: 1.3rem;
+                }
+
+            /* ===== البطاقات ===== */
+            .card {
+                border-radius: 12px;
+                margin-bottom: 0.75rem;
+            }
+
+            .card-header {
+                padding: 0.75rem 1rem;
+            }
+
+                .card-header h5 {
+                    font-size: 1rem;
+                }
+
+            .card-body {
+                padding: 1rem;
+            }
+
+            /* ===== الفوتر ===== */
+            .footer {
+                padding: 12px 0;
+                font-size: 0.8rem;
+            }
+
+                .footer small {
+                    font-size: 0.7rem;
+                    line-height: 1.6;
+                }
+
+            /* ===== الأزرار ===== */
+            .btn {
+                font-size: 0.85rem;
+                padding: 0.4rem 1rem;
+            }
+
+            .btn-sm {
+                font-size: 0.75rem;
+                padding: 0.3rem 0.75rem;
+            }
+
+            /* ===== الجداول ===== */
+            .table {
+                font-size: 0.8rem;
+            }
+
+                .table thead th,
+                .table tbody td {
+                    padding: 0.5rem;
+                }
+
+            /* ===== النماذج ===== */
+            .form-control,
+            .form-select {
+                font-size: 0.9rem;
+                padding: 0.5rem 0.75rem;
             }
 
             .container,
             .container-fluid {
                 padding-left: 0.5rem !important;
                 padding-right: 0.5rem !important;
+            }
+        }
+
+        /* ===== الموبايل الصغير (480px وأقل) ===== */
+        @media (max-width: 479px) {
+            .top-bar .navbar-brand span {
+                font-size: 0.9rem;
+            }
+
+            .top-bar .navbar-brand img {
+                width: 28px;
+                height: 28px;
+            }
+
+            .search-input {
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+
+            main h2 {
+                font-size: 1.1rem;
+            }
+
+            .card {
+                border-radius: 10px;
+            }
+
+            .footer {
+                font-size: 0.7rem;
             }
         }
     </style>
@@ -496,6 +663,11 @@
     {% if session.user_id %}
     <nav class="navbar navbar-expand-lg main-nav">
         <div class="container-fluid">
+            <!-- ✅ زر الـ Hamburger للموبايل -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
             <div class="collapse navbar-collapse" id="mainNav">
                 <ul class="navbar-nav flex-wrap">
 
