@@ -29,11 +29,17 @@
     --nq-shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.6);
 }
 
-/* ===== الأساسيات ===== */
+/* ===== ✅ الأساسيات - إزالة الهوامش ===== */
+html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+}
+
 * {
     font-family: 'Tajawal', sans-serif;
-    margin: 0;
-    padding: 0;
     box-sizing: border-box;
 }
 
@@ -51,43 +57,43 @@ body {
     padding: 0.7rem 0;
 }
 
-.navbar-custom .navbar-brand {
-    font-weight: 800;
-    font-size: 1.4rem;
-    color: var(--nq-white) !important;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
+    .navbar-custom .navbar-brand {
+        font-weight: 800;
+        font-size: 1.4rem;
+        color: var(--nq-white) !important;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
 
-.navbar-custom .navbar-brand img {
-    height: 38px;
-    width: auto;
-}
+        .navbar-custom .navbar-brand img {
+            height: 38px;
+            width: auto;
+        }
 
-.navbar-custom .nav-link {
-    color: rgba(255, 255, 255, 0.85) !important;
-    font-weight: 500;
-    padding: 0.5rem 1rem;
-    border-radius: var(--nq-radius-sm);
-    transition: var(--nq-transition);
-    font-size: 0.95rem;
-}
+    .navbar-custom .nav-link {
+        color: rgba(255, 255, 255, 0.85) !important;
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+        border-radius: var(--nq-radius-sm);
+        transition: var(--nq-transition);
+        font-size: 0.95rem;
+    }
 
-.navbar-custom .nav-link:hover {
-    color: #fff !important;
-    background: rgba(255, 255, 255, 0.12);
-    transform: translateY(-1px);
-}
+        .navbar-custom .nav-link:hover {
+            color: #fff !important;
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-1px);
+        }
 
-.navbar-custom .nav-link.active {
-    color: #fff !important;
-    background: rgba(255, 255, 255, 0.18);
-}
+        .navbar-custom .nav-link.active {
+            color: #fff !important;
+            background: rgba(255, 255, 255, 0.18);
+        }
 
-.navbar-custom .nav-link i {
-    margin-left: 6px;
-}
+        .navbar-custom .nav-link i {
+            margin-left: 6px;
+        }
 
 /* ===== البطاقات ===== */
 .card {
@@ -99,10 +105,10 @@ body {
     overflow: hidden;
 }
 
-.card:hover {
-    box-shadow: var(--nq-shadow-hover);
-    transform: translateY(-4px);
-}
+    .card:hover {
+        box-shadow: var(--nq-shadow-hover);
+        transform: translateY(-4px);
+    }
 
 .card-header {
     background: transparent;
@@ -130,35 +136,35 @@ body {
     cursor: pointer;
 }
 
-.stat-card:hover {
-    transform: translateY(-5px) scale(1.02);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-}
+    .stat-card:hover {
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
 
-.stat-card .stat-icon {
-    position: absolute;
-    left: 1.5rem;
-    bottom: 1.5rem;
-    font-size: 3.5rem;
-    opacity: 0.12;
-}
+    .stat-card .stat-icon {
+        position: absolute;
+        left: 1.5rem;
+        bottom: 1.5rem;
+        font-size: 3.5rem;
+        opacity: 0.12;
+    }
 
-.stat-card .stat-number {
-    font-size: 2.2rem;
-    font-weight: 800;
-    margin: 0.25rem 0;
-}
+    .stat-card .stat-number {
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin: 0.25rem 0;
+    }
 
-.stat-card .stat-label {
-    font-size: 0.85rem;
-    opacity: 0.85;
-    font-weight: 500;
-}
+    .stat-card .stat-label {
+        font-size: 0.85rem;
+        opacity: 0.85;
+        font-weight: 500;
+    }
 
-.stat-card .stat-sub {
-    font-size: 0.75rem;
-    opacity: 0.7;
-}
+    .stat-card .stat-sub {
+        font-size: 0.75rem;
+        opacity: 0.7;
+    }
 
 /* ===== الأزرار ===== */
 .btn {
@@ -169,10 +175,10 @@ body {
     border: none;
 }
 
-.btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
+    .btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
 
 .btn-primary {
     background: linear-gradient(135deg, var(--nq-primary), var(--nq-primary-light));
@@ -217,9 +223,9 @@ body {
     transition: var(--nq-transition);
 }
 
-.table tbody tr:hover {
-    background: rgba(0, 51, 102, 0.05);
-}
+    .table tbody tr:hover {
+        background: rgba(0, 51, 102, 0.05);
+    }
 
 [data-theme="dark"] .table tbody tr:hover {
     background: rgba(255, 255, 255, 0.03);
@@ -260,15 +266,15 @@ body {
     text-decoration: none;
 }
 
-.lang-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-}
+    .lang-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+    }
 
-.lang-btn.active {
-    background: rgba(255, 255, 255, 0.25);
-    color: white;
-}
+    .lang-btn.active {
+        background: rgba(255, 255, 255, 0.25);
+        color: white;
+    }
 
 .theme-toggle {
     background: rgba(255, 255, 255, 0.1);
@@ -280,28 +286,28 @@ body {
     font-size: 1.1rem;
 }
 
-.theme-toggle:hover {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    transform: rotate(20deg);
-}
+    .theme-toggle:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        transform: rotate(20deg);
+    }
 
 /* ===== الإشعارات ===== */
 .notification-badge {
     position: relative;
 }
 
-.notification-badge .badge-count {
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    background: #dc3545;
-    color: white;
-    border-radius: 50%;
-    padding: 1px 7px;
-    font-size: 10px;
-    font-weight: 700;
-}
+    .notification-badge .badge-count {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        background: #dc3545;
+        color: white;
+        border-radius: 50%;
+        padding: 1px 7px;
+        font-size: 10px;
+        font-weight: 700;
+    }
 
 /* ===== أنيميشن ===== */
 .fade-in {
@@ -313,16 +319,28 @@ body {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
     }
 }
 
-.delay-1 { animation-delay: 0.05s; }
-.delay-2 { animation-delay: 0.1s; }
-.delay-3 { animation-delay: 0.15s; }
-.delay-4 { animation-delay: 0.2s; }
+.delay-1 {
+    animation-delay: 0.05s;
+}
+
+.delay-2 {
+    animation-delay: 0.1s;
+}
+
+.delay-3 {
+    animation-delay: 0.15s;
+}
+
+.delay-4 {
+    animation-delay: 0.2s;
+}
 
 /* ===== تأثيرات البطاقات القابلة للنقر ===== */
 a .stat-card,
@@ -330,16 +348,16 @@ a .card {
     transition: all 0.3s ease;
 }
 
-a .stat-card:hover {
-    transform: translateY(-5px) scale(1.02);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-}
+    a .stat-card:hover {
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
 
-a .card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    border-color: var(--nq-primary);
-}
+    a .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        border-color: var(--nq-primary);
+    }
 
 /* ===== المودالات ===== */
 .modal {
@@ -365,12 +383,15 @@ a .card:hover {
     .stat-card .stat-number {
         font-size: 1.6rem;
     }
+
     .navbar-custom .navbar-brand {
         font-size: 1.1rem;
     }
-    .navbar-custom .navbar-brand img {
-        height: 30px;
-    }
+
+        .navbar-custom .navbar-brand img {
+            height: 30px;
+        }
+
     .card-body {
         padding: 1rem;
     }
@@ -382,10 +403,12 @@ a .card:hover {
     .footer {
         display: none !important;
     }
+
     .card {
         box-shadow: none !important;
         border: 1px solid #ddd !important;
     }
+
     body {
         background: white !important;
     }

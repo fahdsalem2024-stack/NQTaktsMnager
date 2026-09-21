@@ -1,4 +1,4 @@
-﻿﻿﻿{% set lang = get_lang() %}
+﻿﻿﻿﻿{% set lang = get_lang() %}
 <!DOCTYPE html>
 <html dir="{% if lang == 'ar' %}rtl{% else %}ltr{% endif %}" lang="{{ lang }}">
 <head>
@@ -21,17 +21,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 
     <style>
-        /* ===== إعدادات عامة ===== */
-        * {
-            font-family: 'Tajawal', sans-serif;
-        }
-
+        /* ============================================ */
+        /* ✅ الحل الجذري: إزالة كل الهوامش الافتراضية */
+        /* ============================================ */
         html, body {
-            width: 100%;
-            max-width: 100%;
-            overflow-x: hidden;
-            margin: 0;
-            padding: 0;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow-x: hidden !important;
         }
 
         body {
@@ -39,25 +37,44 @@
             color: #1a1a2e;
             min-height: 100vh;
             font-size: 15px;
+            padding-top: 0 !important;
+            margin-top: 0 !important;
         }
 
-        h1, h2, h3, h4 {
-            font-weight: 700;
+        * {
+            font-family: 'Tajawal', sans-serif;
+            box-sizing: border-box;
         }
 
-        /* ===== إزالة الهوامش من الـ containers ===== */
+        /* ✅ إزالة الهوامش من الـ navbar */
+        .navbar {
+            margin: 0 !important;
+            border-radius: 0 !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+
+        /* ✅ إزالة الهوامش من الـ container */
+        .container,
         .container-fluid {
+            margin-left: 0 !important;
+            margin-right: 0 !important;
             padding-left: 1.5rem;
             padding-right: 1.5rem;
-            max-width: 100%;
+            max-width: 100% !important;
+            width: 100% !important;
         }
 
-        /* على الشاشات الكبيرة جداً */
         @media (min-width: 1800px) {
+            .container,
             .container-fluid {
                 padding-left: 3rem;
                 padding-right: 3rem;
             }
+        }
+
+        h1, h2, h3, h4 {
+            font-weight: 700;
         }
 
         /* ===== Navbar العلوي (Top Bar) ===== */
@@ -65,9 +82,9 @@
             background: #0F172A;
             padding: 8px 0;
             border-bottom: 1px solid #1E293B;
-            width: 100%;
-            margin: 0;
-            border-radius: 0;
+            width: 100% !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
         }
 
             .top-bar .navbar-brand img {
@@ -196,9 +213,9 @@
             background: #1E293B;
             padding: 0;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            width: 100%;
-            margin: 0;
-            border-radius: 0;
+            width: 100% !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
         }
 
             .main-nav .nav-link {
@@ -297,9 +314,9 @@
             padding: 20px 0;
             margin-top: 3rem;
             border-top: 1px solid #1E293B;
-            width: 100%;
-            margin-left: 0;
-            margin-right: 0;
+            width: 100% !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
         }
 
             .footer small {
@@ -308,8 +325,11 @@
 
         /* ===== المحتوى الرئيسي ===== */
         main {
-            width: 100%;
-            max-width: 100%;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding-top: 1rem !important;
+            padding-bottom: 1rem !important;
         }
 
         /* ===== التجاوب ===== */
@@ -350,6 +370,7 @@
                 font-size: 1rem;
             }
 
+            .container,
             .container-fluid {
                 padding-left: 1rem;
                 padding-right: 1rem;
@@ -592,7 +613,7 @@
     <!-- ============================================================ -->
     <!-- ===== المحتوى ===== -->
     <!-- ============================================================ -->
-    <main class="container-fluid py-4">
+    <main class="container-fluid py-3">
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         {% for category, message in messages %}
