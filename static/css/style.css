@@ -50,6 +50,40 @@ body {
     min-height: 100vh;
 }
 
+/* ===== إزالة الهوامش من الـ navbar ===== */
+.navbar {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* ===== تقليل padding الـ container ===== */
+.container,
+.container-fluid {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+/* ===== المحتوى الرئيسي ===== */
+main {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0.5rem 0.75rem !important;
+}
+
+@media (min-width: 1400px) {
+    .container,
+    .container-fluid {
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+    }
+}
+
 /* ===== الشريط العلوي (Navbar) ===== */
 .navbar-custom {
     background: linear-gradient(135deg, var(--nq-primary), var(--nq-primary-dark)) !important;
