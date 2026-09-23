@@ -113,6 +113,7 @@ def upload_favicon():
 
 @settings_bp.route('/reset_sequence', methods=['POST'])
 def reset_sequence():
+    """إعادة ضبط الترقيم - يبدأ من 1"""
     if not check_role(['مدير']):
         flash('⛔ غير مصرح لك', 'danger')
         return redirect(url_for('settings.company_settings'))
@@ -120,21 +121,63 @@ def reset_sequence():
     try:
         conn = get_db()
         
+        # قائمة الجداول اللي فيها AUTOINCREMENT
         tables = [
-            'client_contracts', 'clients', 'client_payments', 'tasks', 'trainers',
-            'contract_payments', 'contract_attachments', 'client_modules', 'meetings'
+            'users',
+            'clients',
+            'trainers',
+            'tasks',
+            'client_contracts',
+            'client_payments',
+            'contract_payments',
+            'contract_attachments',
+            'client_modules',
+            'meetings',
+            'notifications',
+            'activity_log',
+            'login_attempts',
+            'module_types',
+            'contract_types',
         ]
         
+        reset_count = 0
+        
         for table in tables:
-            conn.execute(f"DELETE FROM sqlite_sequence WHERE name='{table}'")
+            try:
+                # ✅ الطريقة الصحيحة: نستخدم UPDATE بدل DELETE
+                # لو الجدول مش موجود في sqlite_sequence، الـ UPDATE مش هيعمل حاجة
+                result = conn.execute(
+                    "UPDATE sqlite_sequence SET seq = 0 WHERE name = ?",
+                    (table,)
+                )
+                
+                if result.rowcount > 0:
+                    reset_count += 1
+                    print(f"✅ تم تصفير ترقيم: {table}")
+                else:
+                    # لو الجدول مش موجود في sqlite_sequence، نحاول نضيفه
+                    try:
+                        conn.execute(
+                            "INSERT INTO sqlite_sequence (name, seq) VALUES (?, 0)",
+                            (table,)
+                        )
+                        reset_count += 1
+                        print(f"✅ تم إضافة وتصفير: {table}")
+                    except:
+                        print(f"ℹ️ الجدول {table} غير موجود في sqlite_sequence")
+                        
+            except Exception as e:
+                print(f"⚠️ فشل في {table}: {e}")
         
         conn.commit()
         conn.close()
         
-        flash('✅ تم إعادة ضبط الترقيم لجميع الجداول بنجاح', 'success')
-        log_activity(session['user_id'], 'إعادة ضبط الترقيم', '')
+        flash(f'✅ تم إعادة ضبط الترقيم لـ {reset_count} جدول بنجاح! الترقيم الجديد سيبدأ من 1', 'success')
+        log_activity(session['user_id'], 'إعادة ضبط الترقيم', f'تم تصفير {reset_count} جدول')
+        
     except Exception as e:
         flash(f'❌ خطأ: {str(e)}', 'danger')
+        print(f"❌ خطأ: {e}")
     
     return redirect(url_for('settings.company_settings'))
 
@@ -185,12 +228,6 @@ def delete_all_data():
                     print(f"⚠️ الجدول {table} غير موجود")
                 else:
                     print(f"❌ خطأ في {table}: {e}")
-        
-        for table in tables:
-            try:
-                conn.execute(f"DELETE FROM sqlite_sequence WHERE name='{table}'")
-            except:
-                pass
         
         conn.commit()
         conn.close()
