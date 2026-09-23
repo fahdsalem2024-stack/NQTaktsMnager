@@ -2,16 +2,16 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-    <h2><i class="bi bi-coin text-primary"></i> مدفوعات العملاء</h2>
+    <h2><i class="bi bi-coin text-primary"></i> {{ t('client_payments') }}</h2>
     <div>
         <button onclick="window.print()" class="btn btn-outline-secondary">
-            <i class="bi bi-printer"></i> طباعة
+            <i class="bi bi-printer"></i> {{ t('print') }}
         </button>
         <a href="/export_all_payments_excel" class="btn btn-success">
-            <i class="bi bi-file-excel"></i> تصدير Excel
+            <i class="bi bi-file-excel"></i> {{ t('export_excel') }}
         </a>
         <a href="/add_payment_global" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> إضافة دفعة
+            <i class="bi bi-plus-circle"></i> {{ t('add_payment') }}
         </a>
     </div>
 </div>
@@ -21,25 +21,25 @@
     <div class="col-md-3">
         <div class="stat-card-mini bg-primary">
             <div class="stat-value">{{ stats.total_count or 0 }}</div>
-            <div class="stat-label">عدد المدفوعات</div>
+            <div class="stat-label">{{ t('payment_count') }}</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stat-card-mini bg-success">
-            <div class="stat-value">{{ stats.total_paid or 0 }} ر.س</div>
-            <div class="stat-label">إجمالي المدفوع</div>
+            <div class="stat-value">{{ stats.total_paid or 0 }} {{ t('currency') }}</div>
+            <div class="stat-label">{{ t('total_paid') }}</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stat-card-mini bg-warning">
-            <div class="stat-value">{{ stats.total_pending or 0 }} ر.س</div>
-            <div class="stat-label">معلق</div>
+            <div class="stat-value">{{ stats.total_pending or 0 }} {{ t('currency') }}</div>
+            <div class="stat-label">{{ t('status_pending') }}</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stat-card-mini bg-danger">
-            <div class="stat-value">{{ stats.total_overdue or 0 }} ر.س</div>
-            <div class="stat-label">متأخر</div>
+            <div class="stat-value">{{ stats.total_overdue or 0 }} {{ t('currency') }}</div>
+            <div class="stat-label">{{ t('status_overdue') }}</div>
         </div>
     </div>
 </div>
@@ -52,33 +52,33 @@
                 <div class="input-group">
                     <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
                     <input type="text" name="search" class="form-control border-start-0" 
-                           placeholder="بحث باسم العميل أو الشركة..." 
+                           placeholder="{{ t('search_payments_placeholder') }}" 
                            value="{{ search or '' }}">
                 </div>
             </div>
             <div class="col-md-2">
                 <select name="status" class="form-select">
-                    <option value="">كل الحالات</option>
-                    <option value="مدفوع" {% if status_filter == 'مدفوع' %}selected{% endif %}>مدفوع</option>
-                    <option value="معلق" {% if status_filter == 'معلق' %}selected{% endif %}>معلق</option>
-                    <option value="متأخر" {% if status_filter == 'متأخر' %}selected{% endif %}>متأخر</option>
+                    <option value="">{{ t('all_statuses') }}</option>
+                    <option value="مدفوع" {% if status_filter == 'مدفوع' %}selected{% endif %}>{{ t('status_paid') }}</option>
+                    <option value="معلق" {% if status_filter == 'معلق' %}selected{% endif %}>{{ t('status_pending') }}</option>
+                    <option value="متأخر" {% if status_filter == 'متأخر' %}selected{% endif %}>{{ t('status_overdue') }}</option>
                 </select>
             </div>
             <div class="col-md-2">
                 <select name="per_page" class="form-select">
                     {% for opt in per_page_options %}
                     <option value="{{ opt }}" {% if per_page == opt %}selected{% endif %}>
-                        عرض {{ opt }}
+                        {{ t('show') }} {{ opt }}
                     </option>
                     {% endfor %}
                     <option value="999999" {% if per_page == 999999 %}selected{% endif %}>
-                        عرض الكل
+                        {{ t('show_all') }}
                     </option>
                 </select>
             </div>
             <div class="col-md-4">
                 <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-search"></i> بحث
+                    <i class="bi bi-search"></i> {{ t('search') }}
                 </button>
             </div>
         </form>
@@ -86,7 +86,7 @@
         <div class="mt-2">
             <small class="text-muted">
                 <a href="/all_payments" class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-x-circle"></i> إلغاء الفلترة
+                    <i class="bi bi-x-circle"></i> {{ t('cancel_filter') }}
                 </a>
             </small>
         </div>
@@ -103,16 +103,16 @@
                     <thead class="sticky-top bg-white">
                         <tr>
                             <th style="min-width: 50px;">#</th>
-                            <th style="min-width: 130px;">العميل</th>
-                            <th style="min-width: 130px;">الشركة</th>
-                            <th style="min-width: 100px;">المبلغ</th>
-                            <th style="min-width: 110px;">تاريخ الدفع</th>
-                            <th style="min-width: 110px;">تاريخ الاستحقاق</th>
-                            <th style="min-width: 100px;">طريقة الدفع</th>
-                            <th style="min-width: 80px;">الحالة</th>
-                            <th style="min-width: 100px;">رقم الفاتورة</th>
-                            <th style="min-width: 120px;">الملاحظات</th>
-                            <th style="min-width: 140px;">إجراءات</th>
+                            <th style="min-width: 130px;">{{ t('client') }}</th>
+                            <th style="min-width: 130px;">{{ t('company') }}</th>
+                            <th style="min-width: 100px;">{{ t('amount') }}</th>
+                            <th style="min-width: 110px;">{{ t('payment_date') }}</th>
+                            <th style="min-width: 110px;">{{ t('due_date') }}</th>
+                            <th style="min-width: 100px;">{{ t('payment_method') }}</th>
+                            <th style="min-width: 80px;">{{ t('status') }}</th>
+                            <th style="min-width: 100px;">{{ t('invoice_number') }}</th>
+                            <th style="min-width: 120px;">{{ t('notes') }}</th>
+                            <th style="min-width: 140px;">{{ t('actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -125,7 +125,7 @@
                                 </a>
                             </td>
                             <td>{{ payment.company_name or '-' }}</td>
-                            <td><span class="fw-bold">{{ payment.amount }} ر.س</span></td>
+                            <td><span class="fw-bold">{{ payment.amount }} {{ t('currency') }}</span></td>
                             <td>{{ payment.payment_date }}</td>
                             <td>{{ payment.due_date or '-' }}</td>
                             <td>{{ payment.payment_method }}</td>
@@ -134,7 +134,10 @@
                                     {% if payment.status == 'مدفوع' %}bg-success
                                     {% elif payment.status == 'معلق' %}bg-warning text-dark
                                     {% else %}bg-danger{% endif %}">
-                                    {{ payment.status }}
+                                    {% if payment.status == 'مدفوع' %}{{ t('status_paid') }}
+                                    {% elif payment.status == 'معلق' %}{{ t('status_pending') }}
+                                    {% elif payment.status == 'متأخر' %}{{ t('status_overdue') }}
+                                    {% else %}{{ payment.status }}{% endif %}
                                 </span>
                             </td>
                             <td>{{ payment.invoice_number or '-' }}</td>
@@ -147,10 +150,10 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <a href="/edit_payment/{{ payment.id }}" class="btn btn-outline-info" title="تعديل">
+                                    <a href="/edit_payment/{{ payment.id }}" class="btn btn-outline-info" title="{{ t('edit') }}">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <button class="btn btn-outline-danger" onclick="deletePayment({{ payment.id }})" title="حذف">
+                                    <button class="btn btn-outline-danger" onclick="deletePayment({{ payment.id }})" title="{{ t('delete') }}">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
@@ -168,8 +171,8 @@
 <div class="row mt-4 align-items-center">
     <div class="col-md-6">
         <div class="text-muted small">
-            عرض {{ payments|length }} من أصل {{ total }} دفعة
-            {% if search %} - نتائج البحث عن: "{{ search }}"{% endif %}
+            {{ t('showing') }} {{ payments|length }} {{ t('of') }} {{ total }} {{ t('payment_singular') }}
+            {% if search %} - {{ t('search_results_for') }}: "{{ search }}"{% endif %}
         </div>
     </div>
     <div class="col-md-6">
@@ -207,7 +210,7 @@
 
 <script>
 function deletePayment(paymentId) {
-    if (confirm('⚠️ هل أنت متأكد من حذف هذه الدفعة؟\n\nهذا الإجراء لا يمكن التراجع عنه!')) {
+    if (confirm('⚠️ {{ t("confirm_delete_payment") }}\n\n{{ t("action_cannot_be_undone") }}')) {
         var form = document.createElement('form');
         form.method = 'POST';
         form.action = '/delete_payment/' + paymentId;
@@ -226,14 +229,8 @@ function deletePayment(paymentId) {
 }
 .stat-card-mini .stat-value { font-size: 1.8rem; font-weight: 700; }
 .stat-card-mini .stat-label { font-size: 0.8rem; opacity: 0.8; }
-
-.table-wrapper {
-    max-height: 600px;
-    overflow-y: auto;
-}
-.table-wrapper .table-modern {
-    font-size: 14px;
-}
+.table-wrapper { max-height: 600px; overflow-y: auto; }
+.table-wrapper .table-modern { font-size: 14px; }
 .table-wrapper .table-modern thead th {
     background: #f8fafc;
     color: #475569;
@@ -243,57 +240,30 @@ function deletePayment(paymentId) {
     position: sticky;
     top: 0;
     z-index: 10;
-    box-shadow: inset 0 -2px 0 #e2e8f0;
 }
 .table-wrapper .table-modern tbody td {
     padding: 12px 16px;
     vertical-align: middle;
     border-bottom: 1px solid #f1f5f9;
 }
-.table-wrapper .table-modern tbody tr:hover {
-    background: #f8fafc;
-}
-
-.btn-group .btn {
-    border-radius: 8px !important;
-    margin: 0 2px;
-}
-
-.pagination {
-    gap: 2px;
-}
+.table-wrapper .table-modern tbody tr:hover { background: #f8fafc; }
+.btn-group .btn { border-radius: 8px !important; margin: 0 2px; }
+.pagination { gap: 2px; }
 .pagination .page-link {
     border-radius: 8px;
     border: 1px solid #e2e8f0;
     color: #475569;
     transition: all 0.2s ease;
 }
-.pagination .page-link:hover {
-    background: #f1f5f9;
-    border-color: #cbd5e1;
-}
+.pagination .page-link:hover { background: #f1f5f9; }
 .pagination .page-item.active .page-link {
     background: #2563EB;
     border-color: #2563EB;
     color: white;
 }
-
-.table-wrapper::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-.table-wrapper::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 10px;
-}
-.table-wrapper::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 10px;
-}
-.table-wrapper::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
-}
-
+.table-wrapper::-webkit-scrollbar { width: 8px; height: 8px; }
+.table-wrapper::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+.table-wrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 @media print {
     .btn, .navbar, .footer, .no-print { display: none !important; }
     .card { box-shadow: none !important; border: 1px solid #ddd !important; }

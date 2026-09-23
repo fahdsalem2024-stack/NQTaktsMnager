@@ -2,10 +2,10 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-    <h2><i class="bi bi-bar-chart text-primary"></i> التقارير</h2>
+    <h2><i class="bi bi-bar-chart text-primary"></i> {{ t('reports') }}</h2>
     <div>
         <button onclick="window.print()" class="btn btn-outline-secondary">
-            <i class="bi bi-printer"></i> طباعة
+            <i class="bi bi-printer"></i> {{ t('print') }}
         </button>
     </div>
 </div>
@@ -18,43 +18,43 @@
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-gradient-excel text-white">
                 <h5 class="mb-0">
-                    <i class="bi bi-file-earmark-excel"></i> تصدير التقارير إلى Excel
+                    <i class="bi bi-file-earmark-excel"></i> {{ t('export_reports_excel') }}
                 </h5>
             </div>
             <div class="card-body">
                 <p class="text-muted small mb-3">
                     <i class="bi bi-info-circle"></i>
-                    يمكنك تحميل التقارير بصيغة Excel (.xlsx) لفتحها في Microsoft Excel أو Google Sheets
+                    {{ t('excel_export_info') }}
                 </p>
                 <div class="row g-3">
                     <div class="col-md-3 col-6">
                         <a href="/export/contracts" class="btn btn-outline-primary w-100 py-3">
                             <i class="bi bi-file-earmark-text fs-4 d-block mb-1"></i>
-                            <span class="small">تصدير العقود</span>
+                            <span class="small">{{ t('export_contracts') }}</span>
                         </a>
                     </div>
                     <div class="col-md-3 col-6">
                         <a href="/export/payments" class="btn btn-outline-success w-100 py-3">
                             <i class="bi bi-coin fs-4 d-block mb-1"></i>
-                            <span class="small">تصدير المدفوعات</span>
+                            <span class="small">{{ t('export_payments') }}</span>
                         </a>
                     </div>
                     <div class="col-md-3 col-6">
                         <a href="/export/tasks" class="btn btn-outline-info w-100 py-3">
                             <i class="bi bi-list-task fs-4 d-block mb-1"></i>
-                            <span class="small">تصدير المهام</span>
+                            <span class="small">{{ t('export_tasks') }}</span>
                         </a>
                     </div>
                     <div class="col-md-3 col-6">
                         <a href="/export/clients" class="btn btn-outline-warning w-100 py-3">
                             <i class="bi bi-people fs-4 d-block mb-1"></i>
-                            <span class="small">تصدير العملاء</span>
+                            <span class="small">{{ t('export_clients') }}</span>
                         </a>
                     </div>
                     <div class="col-12">
                         <a href="/export/all" class="btn btn-success w-100 py-3">
                             <i class="bi bi-download fs-5"></i>
-                            تحميل التقرير الشامل (كل البيانات في ملف واحد بأربع أوراق)
+                            {{ t('export_full_report') }}
                         </a>
                     </div>
                 </div>
@@ -66,100 +66,93 @@
 <!-- ===== بطاقات التقارير ===== -->
 <div class="row g-4">
 
-    <!-- ===== تقرير العقود ===== -->
     <div class="col-md-4">
         <div class="report-card">
             <div class="report-icon" style="color: #2563EB;">
                 <i class="bi bi-file-earmark-text"></i>
             </div>
-            <h5 class="fw-bold mt-2">تقارير العقود</h5>
-            <p class="text-muted small">عرض جميع العقود مع تفاصيل الدفعات</p>
+            <h5 class="fw-bold mt-2">{{ t('contracts_report') }}</h5>
+            <p class="text-muted small">{{ t('contracts_report_desc') }}</p>
             <a href="/contracts_report" class="btn btn-primary w-100 mt-2">
-                <i class="bi bi-eye"></i> عرض
+                <i class="bi bi-eye"></i> {{ t('view') }}
             </a>
         </div>
     </div>
 
-    <!-- ===== تقرير المدفوعات ===== -->
     <div class="col-md-4">
         <div class="report-card">
             <div class="report-icon" style="color: #22c55e;">
                 <i class="bi bi-coin"></i>
             </div>
-            <h5 class="fw-bold mt-2">تقرير المدفوعات</h5>
-            <p class="text-muted small">عرض جميع المدفوعات والإحصائيات</p>
+            <h5 class="fw-bold mt-2">{{ t('payments_report') }}</h5>
+            <p class="text-muted small">{{ t('payments_report_desc') }}</p>
             <a href="/all_payments" class="btn btn-success w-100 mt-2">
-                <i class="bi bi-eye"></i> عرض
+                <i class="bi bi-eye"></i> {{ t('view') }}
             </a>
         </div>
     </div>
 
-    <!-- ===== تقرير الإيرادات ===== -->
     <div class="col-md-4">
         <div class="report-card">
             <div class="report-icon" style="color: #f59e0b;">
                 <i class="bi bi-graph-up-arrow"></i>
             </div>
-            <h5 class="fw-bold mt-2">تقرير الإيرادات</h5>
-            <p class="text-muted small">عرض الإيرادات حسب العميل والشهر</p>
+            <h5 class="fw-bold mt-2">{{ t('revenue_report') }}</h5>
+            <p class="text-muted small">{{ t('revenue_report_desc') }}</p>
             <a href="/revenue_report" class="btn btn-warning w-100 mt-2">
-                <i class="bi bi-eye"></i> عرض
+                <i class="bi bi-eye"></i> {{ t('view') }}
             </a>
         </div>
     </div>
 
-    <!-- ===== تقرير العملاء ===== -->
     <div class="col-md-4">
         <div class="report-card">
             <div class="report-icon" style="color: #8b5cf6;">
                 <i class="bi bi-people"></i>
             </div>
-            <h5 class="fw-bold mt-2">تقرير العملاء</h5>
-            <p class="text-muted small">عرض جميع العملاء مع إحصائياتهم</p>
+            <h5 class="fw-bold mt-2">{{ t('clients_report') }}</h5>
+            <p class="text-muted small">{{ t('clients_report_desc') }}</p>
             <a href="/clients" class="btn btn-purple w-100 mt-2">
-                <i class="bi bi-eye"></i> عرض
+                <i class="bi bi-eye"></i> {{ t('view') }}
             </a>
         </div>
     </div>
 
-    <!-- ===== تقرير التدريبات ===== -->
     <div class="col-md-4">
         <div class="report-card">
             <div class="report-icon" style="color: #ec4899;">
                 <i class="bi bi-list-task"></i>
             </div>
-            <h5 class="fw-bold mt-2">تقرير التدريبات</h5>
-            <p class="text-muted small">عرض التدريبات وحالاتها</p>
+            <h5 class="fw-bold mt-2">{{ t('tasks_report') }}</h5>
+            <p class="text-muted small">{{ t('tasks_report_desc') }}</p>
             <a href="/tasks" class="btn btn-pink w-100 mt-2">
-                <i class="bi bi-eye"></i> عرض
+                <i class="bi bi-eye"></i> {{ t('view') }}
             </a>
         </div>
     </div>
 
-    <!-- ===== تقرير المواعيد ===== -->
     <div class="col-md-4">
         <div class="report-card">
             <div class="report-icon" style="color: #06b6d4;">
                 <i class="bi bi-calendar-event"></i>
             </div>
-            <h5 class="fw-bold mt-2">تقرير المواعيد</h5>
-            <p class="text-muted small">عرض المواعيد القادمة والسابقة</p>
+            <h5 class="fw-bold mt-2">{{ t('meetings_report') }}</h5>
+            <p class="text-muted small">{{ t('meetings_report_desc') }}</p>
             <a href="/meetings" class="btn btn-cyan w-100 mt-2">
-                <i class="bi bi-eye"></i> عرض
+                <i class="bi bi-eye"></i> {{ t('view') }}
             </a>
         </div>
     </div>
 
-    <!-- ===== تقرير متقدم ===== -->
     <div class="col-md-4">
         <div class="report-card">
             <div class="report-icon" style="color: #8b5cf6;">
                 <i class="bi bi-graph-up-arrow"></i>
             </div>
-            <h5 class="fw-bold mt-2">تقارير متقدمة</h5>
-            <p class="text-muted small">توقعات الإيرادات، أفضل العملاء، أداء المدربين</p>
+            <h5 class="fw-bold mt-2">{{ t('advanced_reports') }}</h5>
+            <p class="text-muted small">{{ t('advanced_reports_desc') }}</p>
             <a href="/advanced_reports" class="btn btn-purple w-100 mt-2">
-                <i class="bi bi-eye"></i> عرض
+                <i class="bi bi-eye"></i> {{ t('view') }}
             </a>
         </div>
     </div>
@@ -167,7 +160,6 @@
 </div>
 
 <style>
-    /* ===== بطاقات التقارير ===== */
     .report-card {
         background: white;
         border-radius: 16px;
@@ -177,66 +169,26 @@
         transition: all 0.3s ease;
         height: 100%;
     }
-
-        .report-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.1);
-        }
-
+    .report-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+    }
     .report-icon {
         font-size: 3rem;
         display: block;
     }
-
-    /* ===== خلفية Excel ===== */
     .bg-gradient-excel {
         background: linear-gradient(135deg, #1d6f42, #217346);
     }
-
-    /* ===== أزرار ===== */
-    .btn-purple {
-        background: #8b5cf6;
-        color: white;
-        border: none;
-    }
-
-        .btn-purple:hover {
-            background: #7c3aed;
-            color: white;
-        }
-
-    .btn-pink {
-        background: #ec4899;
-        color: white;
-        border: none;
-    }
-
-        .btn-pink:hover {
-            background: #db2777;
-            color: white;
-        }
-
-    .btn-cyan {
-        background: #06b6d4;
-        color: white;
-        border: none;
-    }
-
-        .btn-cyan:hover {
-            background: #0891b2;
-            color: white;
-        }
-
-    /* ===== تنسيقات الطباعة ===== */
+    .btn-purple { background: #8b5cf6; color: white; border: none; }
+    .btn-purple:hover { background: #7c3aed; color: white; }
+    .btn-pink { background: #ec4899; color: white; border: none; }
+    .btn-pink:hover { background: #db2777; color: white; }
+    .btn-cyan { background: #06b6d4; color: white; border: none; }
+    .btn-cyan:hover { background: #0891b2; color: white; }
     @media print {
-        .btn, .navbar, .footer, .no-print {
-            display: none !important;
-        }
-
-        .report-card {
-            box-shadow: none !important;
-            border: 1px solid #ddd !important;
-        }
+        .btn, .navbar, .footer, .no-print { display: none !important; }
+        .report-card { box-shadow: none !important; border: 1px solid #ddd !important; }
     }
 </style>
 {% endblock %}

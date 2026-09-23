@@ -2,13 +2,13 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-    <h2><i class="bi bi-file-earmark-text text-primary"></i> عقود العملاء</h2>
+    <h2><i class="bi bi-file-earmark-text text-primary"></i> {{ t('contracts') }}</h2>
     <div>
         <a href="/print_all_contracts" class="btn btn-outline-secondary" target="_blank">
-            <i class="bi bi-printer"></i> طباعة الكل
+            <i class="bi bi-printer"></i> {{ t('print_all') }}
         </a>
         <a href="/add_contract" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> إضافة عقد
+            <i class="bi bi-plus-circle"></i> {{ t('add_contract') }}
         </a>
     </div>
 </div>
@@ -18,25 +18,25 @@
     <div class="col-md-3">
         <div class="stat-card-mini bg-primary">
             <div class="stat-value">{{ stats.total }}</div>
-            <div class="stat-label">إجمالي العقود</div>
+            <div class="stat-label">{{ t('total_contracts') }}</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stat-card-mini bg-success">
             <div class="stat-value">{{ stats.active }}</div>
-            <div class="stat-label">نشط</div>
+            <div class="stat-label">{{ t('status_active') }}</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stat-card-mini bg-warning">
             <div class="stat-value">{{ stats.pending }}</div>
-            <div class="stat-label">معلق</div>
+            <div class="stat-label">{{ t('status_pending') }}</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stat-card-mini bg-secondary">
             <div class="stat-value">{{ stats.completed }}</div>
-            <div class="stat-label">منتهي</div>
+            <div class="stat-label">{{ t('status_finished') }}</div>
         </div>
     </div>
 </div>
@@ -49,42 +49,42 @@
                 <div class="input-group">
                     <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
                     <input type="text" name="search" class="form-control border-start-0" 
-                           placeholder="بحث برقم العقد، العنوان، العميل..." 
+                           placeholder="{{ t('search_contracts_placeholder') }}" 
                            value="{{ search or '' }}">
                 </div>
             </div>
             <div class="col-md-2">
                 <select name="status" class="form-select">
-                    <option value="">كل الحالات</option>
-                    <option value="نشط" {% if status_filter == 'نشط' %}selected{% endif %}>نشط</option>
-                    <option value="معلق" {% if status_filter == 'معلق' %}selected{% endif %}>معلق</option>
-                    <option value="منتهي" {% if status_filter == 'منتهي' %}selected{% endif %}>منتهي</option>
-                    <option value="ملغي" {% if status_filter == 'ملغي' %}selected{% endif %}>ملغي</option>
+                    <option value="">{{ t('all_statuses') }}</option>
+                    <option value="نشط" {% if status_filter == 'نشط' %}selected{% endif %}>{{ t('status_active') }}</option>
+                    <option value="معلق" {% if status_filter == 'معلق' %}selected{% endif %}>{{ t('status_pending') }}</option>
+                    <option value="منتهي" {% if status_filter == 'منتهي' %}selected{% endif %}>{{ t('status_finished') }}</option>
+                    <option value="ملغي" {% if status_filter == 'ملغي' %}selected{% endif %}>{{ t('status_cancelled') }}</option>
                 </select>
             </div>
             <div class="col-md-2">
                 <select name="payment_status" class="form-select">
-                    <option value="">كل حالات الدفع</option>
-                    <option value="مدفوع بالكامل" {% if payment_filter == 'مدفوع بالكامل' %}selected{% endif %}>مدفوع بالكامل</option>
-                    <option value="مدفوع جزئيا" {% if payment_filter == 'مدفوع جزئيا' %}selected{% endif %}>مدفوع جزئياً</option>
-                    <option value="غير مدفوع" {% if payment_filter == 'غير مدفوع' %}selected{% endif %}>غير مدفوع</option>
+                    <option value="">{{ t('all_payment_statuses') }}</option>
+                    <option value="مدفوع بالكامل" {% if payment_filter == 'مدفوع بالكامل' %}selected{% endif %}>{{ t('status_fully_paid') }}</option>
+                    <option value="مدفوع جزئيا" {% if payment_filter == 'مدفوع جزئيا' %}selected{% endif %}>{{ t('status_partially_paid') }}</option>
+                    <option value="غير مدفوع" {% if payment_filter == 'غير مدفوع' %}selected{% endif %}>{{ t('status_unpaid') }}</option>
                 </select>
             </div>
             <div class="col-md-2">
                 <select name="per_page" class="form-select">
                     {% for opt in per_page_options %}
                     <option value="{{ opt }}" {% if per_page == opt %}selected{% endif %}>
-                        عرض {{ opt }}
+                        {{ t('show') }} {{ opt }}
                     </option>
                     {% endfor %}
                     <option value="999999" {% if per_page == 999999 %}selected{% endif %}>
-                        عرض الكل
+                        {{ t('show_all') }}
                     </option>
                 </select>
             </div>
             <div class="col-md-2">
                 <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-search"></i> بحث
+                    <i class="bi bi-search"></i> {{ t('search') }}
                 </button>
             </div>
         </form>
@@ -92,7 +92,7 @@
         <div class="mt-2">
             <small class="text-muted">
                 <a href="/contracts" class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-x-circle"></i> إلغاء الفلترة
+                    <i class="bi bi-x-circle"></i> {{ t('cancel_filter') }}
                 </a>
             </small>
         </div>
@@ -100,7 +100,7 @@
     </div>
 </div>
 
-<!-- ===== قائمة العقود مع اسكرول ===== -->
+<!-- ===== قائمة العقود ===== -->
 <div class="card">
     <div class="card-body p-0">
         <div class="table-wrapper" style="max-height: 600px; overflow-y: auto;">
@@ -109,16 +109,16 @@
                     <thead class="sticky-top bg-white">
                         <tr>
                             <th style="min-width: 50px;">#</th>
-                            <th style="min-width: 120px;">رقم العقد</th>
-                            <th style="min-width: 150px;">العنوان</th>
-                            <th style="min-width: 130px;">العميل</th>
-                            <th style="min-width: 130px;">الشركة</th>
-                            <th style="min-width: 100px;">القيمة</th>
-                            <th style="min-width: 110px;">تاريخ البداية</th>
-                            <th style="min-width: 110px;">تاريخ النهاية</th>
-                            <th style="min-width: 80px;">الحالة</th>
-                            <th style="min-width: 100px;">حالة الدفع</th>
-                            <th style="min-width: 160px;">إجراءات</th>
+                            <th style="min-width: 120px;">{{ t('contract_number') }}</th>
+                            <th style="min-width: 150px;">{{ t('title') }}</th>
+                            <th style="min-width: 130px;">{{ t('client') }}</th>
+                            <th style="min-width: 130px;">{{ t('company') }}</th>
+                            <th style="min-width: 100px;">{{ t('contract_value') }}</th>
+                            <th style="min-width: 110px;">{{ t('start_date') }}</th>
+                            <th style="min-width: 110px;">{{ t('end_date') }}</th>
+                            <th style="min-width: 80px;">{{ t('status') }}</th>
+                            <th style="min-width: 100px;">{{ t('payment_status') }}</th>
+                            <th style="min-width: 160px;">{{ t('actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -137,7 +137,7 @@
                                 </a>
                             </td>
                             <td>{{ contract.company_name or '-' }}</td>
-                            <td><span class="fw-bold">{{ contract.contract_value }} ر.س</span></td>
+                            <td><span class="fw-bold">{{ contract.contract_value }} {{ t('currency') }}</span></td>
                             <td>{{ contract.start_date }}</td>
                             <td>{{ contract.end_date }}</td>
                             <td>
@@ -146,7 +146,11 @@
                                     {% elif contract.status == 'معلق' %}bg-warning text-dark
                                     {% elif contract.status == 'منتهي' %}bg-secondary
                                     {% else %}bg-danger{% endif %}">
-                                    {{ contract.status }}
+                                    {% if contract.status == 'نشط' %}{{ t('status_active') }}
+                                    {% elif contract.status == 'معلق' %}{{ t('status_pending') }}
+                                    {% elif contract.status == 'منتهي' %}{{ t('status_finished') }}
+                                    {% elif contract.status == 'ملغي' %}{{ t('status_cancelled') }}
+                                    {% else %}{{ contract.status }}{% endif %}
                                 </span>
                             </td>
                             <td>
@@ -154,21 +158,24 @@
                                     {% if contract.payment_status == 'مدفوع بالكامل' %}bg-success
                                     {% elif contract.payment_status == 'مدفوع جزئيا' %}bg-warning text-dark
                                     {% else %}bg-danger{% endif %}">
-                                    {{ contract.payment_status }}
+                                    {% if contract.payment_status == 'مدفوع بالكامل' %}{{ t('status_fully_paid') }}
+                                    {% elif contract.payment_status == 'مدفوع جزئيا' %}{{ t('status_partially_paid') }}
+                                    {% elif contract.payment_status == 'غير مدفوع' %}{{ t('status_unpaid') }}
+                                    {% else %}{{ contract.payment_status }}{% endif %}
                                 </span>
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <a href="/contract/{{ contract.id }}" class="btn btn-outline-primary" title="تفاصيل">
+                                    <a href="/contract/{{ contract.id }}" class="btn btn-outline-primary" title="{{ t('view') }}">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <a href="/edit_contract/{{ contract.id }}" class="btn btn-outline-info" title="تعديل">
+                                    <a href="/edit_contract/{{ contract.id }}" class="btn btn-outline-info" title="{{ t('edit') }}">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <a href="/print_contract/{{ contract.id }}" class="btn btn-outline-secondary" title="طباعة" target="_blank">
+                                    <a href="/print_contract/{{ contract.id }}" class="btn btn-outline-secondary" title="{{ t('print') }}" target="_blank">
                                         <i class="bi bi-printer"></i>
                                     </a>
-                                    <button class="btn btn-outline-danger" onclick="deleteContract({{ contract.id }})" title="حذف">
+                                    <button class="btn btn-outline-danger" onclick="deleteContract({{ contract.id }})" title="{{ t('delete') }}">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
@@ -182,12 +189,12 @@
     </div>
 </div>
 
-<!-- ===== ترقيم الصفحات ومعلومات ===== -->
+<!-- ===== ترقيم الصفحات ===== -->
 <div class="row mt-4 align-items-center">
     <div class="col-md-6">
         <div class="text-muted small">
-            عرض {{ contracts|length }} من أصل {{ total }} عقد
-            {% if search %} - نتائج البحث عن: "{{ search }}"{% endif %}
+            {{ t('showing') }} {{ contracts|length }} {{ t('of') }} {{ total }} {{ t('contract_singular') }}
+            {% if search %} - {{ t('search_results_for') }}: "{{ search }}"{% endif %}
         </div>
     </div>
     <div class="col-md-6">
@@ -199,7 +206,6 @@
                         <span aria-hidden="true">&raquo;</span>
                     </a>
                 </li>
-                
                 {% for p in range(1, total_pages + 1) %}
                     {% if p == page %}
                     <li class="page-item active"><span class="page-link">{{ p }}</span></li>
@@ -213,7 +219,6 @@
                     <li class="page-item disabled"><span class="page-link">…</span></li>
                     {% endif %}
                 {% endfor %}
-                
                 <li class="page-item {% if page == total_pages %}disabled{% endif %}">
                     <a class="page-link" href="?page={{ page + 1 }}&per_page={{ per_page }}{% if search %}&search={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if payment_filter %}&payment_status={{ payment_filter }}{% endif %}" aria-label="Next">
                         <span aria-hidden="true">&laquo;</span>
@@ -227,7 +232,7 @@
 
 <script>
 function deleteContract(contractId) {
-    if (confirm('⚠️ هل أنت متأكد من حذف هذا العقد؟\n\nهذا الإجراء لا يمكن التراجع عنه!')) {
+    if (confirm('⚠️ {{ t("confirm_delete_contract") }}\n\n{{ t("action_cannot_be_undone") }}')) {
         var form = document.createElement('form');
         form.method = 'POST';
         form.action = '/delete_contract/' + contractId;
@@ -246,17 +251,8 @@ function deleteContract(contractId) {
 }
 .stat-card-mini .stat-value { font-size: 1.8rem; font-weight: 700; }
 .stat-card-mini .stat-label { font-size: 0.8rem; opacity: 0.8; }
-
-/* ===== تنسيق الجدول مع الاسكرول ===== */
-.table-wrapper {
-    max-height: 600px;
-    overflow-y: auto;
-}
-
-.table-wrapper .table-modern {
-    font-size: 14px;
-}
-
+.table-wrapper { max-height: 600px; overflow-y: auto; }
+.table-wrapper .table-modern { font-size: 14px; }
 .table-wrapper .table-modern thead th {
     background: #f8fafc;
     color: #475569;
@@ -266,60 +262,29 @@ function deleteContract(contractId) {
     position: sticky;
     top: 0;
     z-index: 10;
-    box-shadow: inset 0 -2px 0 #e2e8f0;
 }
-
 .table-wrapper .table-modern tbody td {
     padding: 12px 16px;
     vertical-align: middle;
     border-bottom: 1px solid #f1f5f9;
 }
-
-.table-wrapper .table-modern tbody tr:hover {
-    background: #f8fafc;
-}
-
-/* ===== تنسيق الأزرار ===== */
-.btn-group .btn {
-    border-radius: 8px !important;
-    margin: 0 2px;
-}
-
-/* ===== تنسيق الترقيم ===== */
-.pagination {
-    gap: 2px;
-}
+.table-wrapper .table-modern tbody tr:hover { background: #f8fafc; }
+.btn-group .btn { border-radius: 8px !important; margin: 0 2px; }
+.pagination { gap: 2px; }
 .pagination .page-link {
     border-radius: 8px;
     border: 1px solid #e2e8f0;
     color: #475569;
     transition: all 0.2s ease;
 }
-.pagination .page-link:hover {
-    background: #f1f5f9;
-    border-color: #cbd5e1;
-}
+.pagination .page-link:hover { background: #f1f5f9; }
 .pagination .page-item.active .page-link {
     background: #2563EB;
     border-color: #2563EB;
     color: white;
 }
-
-/* ===== تنسيق الـ Scrollbar ===== */
-.table-wrapper::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-.table-wrapper::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 10px;
-}
-.table-wrapper::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 10px;
-}
-.table-wrapper::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
-}
+.table-wrapper::-webkit-scrollbar { width: 8px; height: 8px; }
+.table-wrapper::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+.table-wrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 </style>
 {% endblock %}
