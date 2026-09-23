@@ -23,6 +23,8 @@ os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'contracts'), exist_ok=Tru
 init_db()
 # ===== تهيئة الإيميل =====
 init_mail(app)
+# ✅ إعدادات إضافية للإيميل
+app.config['MAIL_SUPPRESS_SEND'] = not bool(os.environ.get('MAIL_USERNAME'))
 
 # ============================================================
 # ===== Jinja Filters للـ datetime =====

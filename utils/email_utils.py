@@ -1,7 +1,8 @@
 # utils/email_utils.py
 """
-أدوات إرسال الإيميلات
+أدوات إرسال الإيميلات - Non-Blocking
 """
+import threading
 from flask import current_app
 from flask_mail import Mail, Message
 from datetime import datetime
@@ -13,25 +14,48 @@ mail = Mail()
 def init_mail(app):
     """تهيئة الإيميل مع التطبيق"""
     mail.init_app(app)
+    
+    # ✅ تعطيل الإيميل لو مفيش إعدادات
+    if not app.config.get('MAIL_USERNAME'):
+        app.config['MAIL_SUPPRESS_SEND'] = True
+        print("⚠️ MAIL_USERNAME غير موجود — الإيميل معطل")
+
+
+def _send_email_async(app, to, subject, body_html, body_text=None):
+    """إرسال إيميل في Thread منفصل (غير حاجب)"""
+    try:
+        with app.app_context():
+            msg = Message(
+                subject=subject,
+                recipients=[to] if isinstance(to, str) else to,
+                html=body_html,
+                body=body_text or body_html
+            )
+            mail.send(msg)
+            print(f"✅ تم إرسال إيميل إلى {to}")
+    except Exception as e:
+        print(f"⚠️ فشل إرسال إيميل إلى {to}: {e}")
 
 
 def send_email(to, subject, body_html, body_text=None):
-    """إرسال إيميل عام"""
+    """إرسال إيميل (في Thread منفصل — Non-Blocking)"""
     try:
         if not to:
             return False
         
-        msg = Message(
-            subject=subject,
-            recipients=[to] if isinstance(to, str) else to,
-            html=body_html,
-            body=body_text or body_html
+        # ✅ إرسال في Thread منفصل عشان مايعطلش السيرفر
+        app = current_app._get_current_object()
+        thread = threading.Thread(
+            target=_send_email_async,
+            args=(app, to, subject, body_html, body_text),
+            daemon=True
         )
-        mail.send(msg)
-        print(f"✅ تم إرسال إيميل إلى {to}")
+        thread.start()
+        
+        print(f"📤 جاري إرسال إيميل إلى {to} في الخلفية")
         return True
     except Exception as e:
-        print(f"⚠️ فشل إرسال إيميل إلى {to}: {e}")
+        print(f"⚠️ فشل بدء إرسال إيميل: {e}")
         return False
 
 
@@ -202,12 +226,10 @@ def send_task_status_update_email(to_email, user_name, task_title, old_status, n
             {task_title}
         </p>
         <p style="margin: 5px 0; color: #475569;">
-            <strong>من:</strong> <span style="background: #e2e8f0; 
-            padding: 3px 10px; border-radius: 12px;">{old_status}</span>
+            <strong>من:</strong> {old_status}
         </p>
         <p style="margin: 5px 0; color: #475569;">
-            <strong>إلى:</strong> <span style="background: #d4edda; color: #155724; 
-            padding: 3px 10px; border-radius: 12px;">{new_status}</span>
+            <strong>إلى:</strong> {new_status}
         </p>
     </div>
     '''
@@ -248,11 +270,7 @@ def send_payment_received_email(to_email, client_name, amount, invoice_number, p
     </div>
     '''
     
-    html = email_base_template(
-        '✅ تم استلام دفعتكم',
-        content
-    )
-    
+    html = email_base_template('✅ تم استلام دفعتكم', content)
     return send_email(to_email, '✅ تم استلام دفعتكم', html)
 
 
@@ -279,11 +297,7 @@ def send_contract_created_email(to_email, client_name, contract_number, contract
     </div>
     '''
     
-    html = email_base_template(
-        '📄 عقد جديد',
-        content
-    )
-    
+    html = email_base_template('📄 عقد جديد', content)
     return send_email(to_email, f'📄 عقد جديد: {contract_number}', html)
 
 
@@ -346,14 +360,7 @@ def send_overdue_payment_reminder(to_email, client_name, contract_number, amount
             <strong>تاريخ الاستحقاق:</strong> {due_date}
         </p>
     </div>
-    <p style="color: #475569; line-height: 1.8; font-size: 15px;">
-        يرجى التكرم بسداد المبلغ في أقرب وقت.
-    </p>
     '''
     
-    html = email_base_template(
-        '⚠️ تذكير بدفعة مستحقة',
-        content
-    )
-    
+    html = email_base_template('⚠️ تذكير بدفعة مستحقة', content)
     return send_email(to_email, f'⚠️ تذكير: دفعة مستحقة على العقد {contract_number}', html)
