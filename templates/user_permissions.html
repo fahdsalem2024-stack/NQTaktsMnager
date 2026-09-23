@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-shield-lock"></i> صلاحيات المستخدم</h2>
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h2><i class="bi bi-shield-lock"></i> {{ t('user_permissions') }}</h2>
     <div>
         <span class="badge bg-primary fs-6 px-3 py-2">{{ user.name }}</span>
         <a href="/users" class="btn btn-secondary">
-            <i class="bi bi-arrow-right"></i> رجوع
+            <i class="bi bi-arrow-right"></i> {{ t('back') }}
         </a>
     </div>
 </div>
@@ -16,25 +16,27 @@
     <div class="card-body">
         <div class="row">
             <div class="col-md-3">
-                <small class="text-muted d-block">اسم المستخدم</small>
+                <small class="text-muted d-block">{{ t('username') }}</small>
                 <strong>{{ user.username }}</strong>
             </div>
             <div class="col-md-3">
-                <small class="text-muted d-block">الاسم الكامل</small>
+                <small class="text-muted d-block">{{ t('name') }}</small>
                 <strong>{{ user.name }}</strong>
             </div>
             <div class="col-md-3">
-                <small class="text-muted d-block">الدور</small>
+                <small class="text-muted d-block">{{ t('role') }}</small>
                 <span class="badge {% if user.role == 'مدير' %}bg-danger{% elif user.role == 'موظف' %}bg-success{% else %}bg-warning text-dark{% endif %}">
-                    {{ user.role }}
+                    {% if user.role == 'مدير' %}{{ t('role_admin') }}
+                    {% elif user.role == 'موظف' %}{{ t('role_employee') }}
+                    {% else %}{{ t('role_viewer') }}{% endif %}
                 </span>
             </div>
             <div class="col-md-3">
-                <small class="text-muted d-block">الحالة</small>
+                <small class="text-muted d-block">{{ t('status') }}</small>
                 {% if user.is_active %}
-                <span class="badge bg-success">نشط</span>
+                <span class="badge bg-success">{{ t('status_active') }}</span>
                 {% else %}
-                <span class="badge bg-secondary">غير نشط</span>
+                <span class="badge bg-secondary">{{ t('status_inactive') }}</span>
                 {% endif %}
             </div>
         </div>
@@ -44,15 +46,15 @@
 <!-- ===== الصلاحيات ===== -->
 <div class="card">
     <div class="card-header bg-primary text-white">
-        <h5 class="mb-0"><i class="bi bi-list-check"></i> الصلاحيات</h5>
+        <h5 class="mb-0"><i class="bi bi-list-check"></i> {{ t('permissions') }}</h5>
     </div>
     <div class="card-body">
         <div class="alert alert-info">
             <i class="bi bi-info-circle"></i>
-            <strong>ملاحظة:</strong> الصلاحيات تأتي من:
-            <span class="badge bg-success ms-2">الدور (Role)</span>
-            <span class="badge bg-primary ms-2">مضافة يدوياً</span>
-            <span class="badge bg-secondary ms-2">غير مفعلة</span>
+            <strong>{{ t('note') }}:</strong> {{ t('permissions_from_info') }}
+            <span class="badge bg-success ms-2">{{ t('from_role') }}</span>
+            <span class="badge bg-primary ms-2">{{ t('added_manually') }}</span>
+            <span class="badge bg-secondary ms-2">{{ t('inactive') }}</span>
         </div>
         
         {% for resource, perms in grouped_permissions.items() %}
@@ -80,13 +82,13 @@
                                 </div>
                             </form>
                             {% if perm.from_role %}
-                            <span class="badge bg-success" title="من الدور">👑 دور</span>
+                            <span class="badge bg-success" title="{{ t('from_role') }}">👑 {{ t('role_short') }}</span>
                             {% endif %}
                             {% if perm.from_extra and not perm.from_role %}
-                            <span class="badge bg-primary" title="مضافة يدوياً">➕ يدوي</span>
+                            <span class="badge bg-primary" title="{{ t('added_manually') }}">➕ {{ t('manual_short') }}</span>
                             {% endif %}
                             {% if not perm.has_permission and not perm.from_role and not perm.from_extra %}
-                            <span class="badge bg-secondary" title="غير مفعلة">❌</span>
+                            <span class="badge bg-secondary" title="{{ t('inactive') }}">❌</span>
                             {% endif %}
                         </div>
                         <small class="text-muted d-block mt-1">{{ perm.description }}</small>
@@ -102,12 +104,12 @@
 <!-- ===== ملخص الصلاحيات ===== -->
 <div class="card mt-4">
     <div class="card-header bg-success text-white">
-        <h5 class="mb-0"><i class="bi bi-shield-check"></i> ملخص الصلاحيات</h5>
+        <h5 class="mb-0"><i class="bi bi-shield-check"></i> {{ t('permissions_summary') }}</h5>
     </div>
     <div class="card-body">
         <div class="row text-center">
             <div class="col-md-3">
-                <h6 class="text-muted">إجمالي الصلاحيات</h6>
+                <h6 class="text-muted">{{ t('total_permissions') }}</h6>
                 <h3 class="fw-bold">
                     {% set total = 0 %}
                     {% for perms in grouped_permissions.values() %}
@@ -117,7 +119,7 @@
                 </h3>
             </div>
             <div class="col-md-3">
-                <h6 class="text-muted">من الدور (Role)</h6>
+                <h6 class="text-muted">{{ t('from_role') }}</h6>
                 <h3 class="fw-bold text-success">
                     {% set count = 0 %}
                     {% for perms in grouped_permissions.values() %}
@@ -129,7 +131,7 @@
                 </h3>
             </div>
             <div class="col-md-3">
-                <h6 class="text-muted">مضافة يدوياً</h6>
+                <h6 class="text-muted">{{ t('added_manually') }}</h6>
                 <h3 class="fw-bold text-primary">
                     {% set count = 0 %}
                     {% for perms in grouped_permissions.values() %}
@@ -141,7 +143,7 @@
                 </h3>
             </div>
             <div class="col-md-3">
-                <h6 class="text-muted">صلاحيات فعالة</h6>
+                <h6 class="text-muted">{{ t('active_permissions') }}</h6>
                 <h3 class="fw-bold text-info">
                     {% set count = 0 %}
                     {% for perms in grouped_permissions.values() %}
