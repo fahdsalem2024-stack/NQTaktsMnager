@@ -16,5 +16,4 @@ flask-sqlalchemy==3.1.1
 sqlalchemy==2.0.25
 alembic==1.13.1
 
-# Email
-flask-mail==0.10.0
+# ملاحظة: مفيش flask-mail

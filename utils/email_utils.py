@@ -1,40 +1,88 @@
 # utils/email_utils.py
 """
-أدوات إرسال الإيميلات - Non-Blocking
+أدوات إرسال الإيميلات - Non-Blocking + Multi-Port Fallback
 """
 import threading
-from flask import current_app
-from flask_mail import Mail, Message
+import smtplib
+import ssl
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 
 
-mail = Mail()
-
-
-def init_mail(app):
-    """تهيئة الإيميل مع التطبيق"""
-    mail.init_app(app)
+def _send_via_smtp(smtp_server, port, username, password, use_tls, use_ssl, 
+                   to_email, subject, body_html):
+    """إرسال إيميل عبر SMTP مباشرة"""
     
-    # ✅ تعطيل الإيميل لو مفيش إعدادات
-    if not app.config.get('MAIL_USERNAME'):
-        app.config['MAIL_SUPPRESS_SEND'] = True
-        print("⚠️ MAIL_USERNAME غير موجود — الإيميل معطل")
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = subject
+    msg['From'] = username
+    msg['To'] = to_email
+    
+    # Plain text + HTML
+    part_text = MIMEText(body_html, 'plain', 'utf-8')
+    part_html = MIMEText(body_html, 'html', 'utf-8')
+    msg.attach(part_text)
+    msg.attach(part_html)
+    
+    # ✅ محاولة الاتصال
+    if use_ssl:
+        # SSL مباشرة (بورت 465)
+        context = ssl.create_default_context()
+        with smtplib.SMTP_SSL(smtp_server, port, context=context, timeout=10) as server:
+            server.login(username, password)
+            server.send_message(msg)
+    else:
+        # STARTTLS (بورت 587)
+        with smtplib.SMTP(smtp_server, port, timeout=10) as server:
+            server.ehlo()
+            if use_tls:
+                server.starttls(context=ssl.create_default_context())
+                server.ehlo()
+            server.login(username, password)
+            server.send_message(msg)
+    
+    return True
 
 
-def _send_email_async(app, to, subject, body_html, body_text=None):
-    """إرسال إيميل في Thread منفصل (غير حاجب)"""
+def _send_email_worker(app, to, subject, body_html):
+    """Worker بيشتغل في Thread منفصل"""
     try:
         with app.app_context():
-            msg = Message(
-                subject=subject,
-                recipients=[to] if isinstance(to, str) else to,
-                html=body_html,
-                body=body_text or body_html
-            )
-            mail.send(msg)
-            print(f"✅ تم إرسال إيميل إلى {to}")
+            smtp_server = app.config['MAIL_SERVER']
+            username = app.config['MAIL_USERNAME']
+            password = app.config['MAIL_PASSWORD']
+            
+            # ✅ قائمة ports للتجربة
+            ports_to_try = [
+                (587, True, False),   # STARTTLS
+                (465, False, True),   # SSL
+                (2525, True, False),  # بديل (SendGrid, Mailgun)
+                (25, False, False),   # Plain
+            ]
+            
+            last_error = None
+            
+            for port, use_tls, use_ssl in ports_to_try:
+                try:
+                    print(f"📤 محاولة إرسال عبر {smtp_server}:{port}...")
+                    _send_via_smtp(
+                        smtp_server, port, username, password,
+                        use_tls, use_ssl, to, subject, body_html
+                    )
+                    print(f"✅ تم إرسال إيميل إلى {to} عبر البورت {port}")
+                    return True
+                except Exception as e:
+                    print(f"⚠️ فشل البورت {port}: {e}")
+                    last_error = e
+                    continue
+            
+            print(f"❌ فشل إرسال إيميل إلى {to} على كل البورتات: {last_error}")
+            return False
+            
     except Exception as e:
-        print(f"⚠️ فشل إرسال إيميل إلى {to}: {e}")
+        print(f"❌ خطأ عام في _send_email_worker: {e}")
+        return False
 
 
 def send_email(to, subject, body_html, body_text=None):
@@ -43,11 +91,22 @@ def send_email(to, subject, body_html, body_text=None):
         if not to:
             return False
         
-        # ✅ إرسال في Thread منفصل عشان مايعطلش السيرفر
+        from flask import current_app
         app = current_app._get_current_object()
+        
+        # ✅ تحقق من وجود إعدادات
+        if not app.config.get('MAIL_USERNAME'):
+            print(f"⚠️ MAIL_USERNAME غير موجود — تخطي الإيميل")
+            return False
+        
+        if app.config.get('MAIL_SUPPRESS_SEND'):
+            print(f"⚠️ الإيميل معطل — تخطي")
+            return False
+        
+        # ✅ إرسال في Thread منفصل
         thread = threading.Thread(
-            target=_send_email_async,
-            args=(app, to, subject, body_html, body_text),
+            target=_send_email_worker,
+            args=(app, to, subject, body_html),
             daemon=True
         )
         thread.start()
@@ -66,16 +125,14 @@ def email_base_template(title, content_html, cta_text=None, cta_url=None):
     cta_html = ''
     if cta_text and cta_url:
         cta_html = f'''
-        <tr>
-            <td style="padding: 20px 0;">
-                <a href="{cta_url}" 
-                   style="background: #2563EB; color: #fff; padding: 12px 30px; 
-                          text-decoration: none; border-radius: 8px; 
-                          font-weight: 600; display: inline-block;">
-                    {cta_text}
-                </a>
-            </td>
-        </tr>
+        <div style="text-align: center; margin-top: 25px;">
+            <a href="{cta_url}" 
+               style="background: #2563EB; color: #fff; padding: 12px 30px; 
+                      text-decoration: none; border-radius: 8px; 
+                      font-weight: 600; display: inline-block;">
+                {cta_text}
+            </a>
+        </div>
         '''
     
     return f'''

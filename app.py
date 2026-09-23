@@ -6,7 +6,7 @@ from config import Config
 from models import init_db, get_db
 from utils import get_company_settings, get_lang, t, log_activity
 from datetime import datetime
-from utils import init_mail
+
 
 
 # ===== إنشاء التطبيق =====
@@ -22,7 +22,7 @@ os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'contracts'), exist_ok=Tru
 # ===== قاعدة البيانات =====
 init_db()
 # ===== تهيئة الإيميل =====
-init_mail(app)
+
 # ✅ إعدادات إضافية للإيميل
 app.config['MAIL_SUPPRESS_SEND'] = not bool(os.environ.get('MAIL_USERNAME'))
 
