@@ -44,7 +44,7 @@
                     <span class="badge bg-secondary">{{ t('status_inactive') }}</span>
                     {% endif %}
                 </td>
-                <td>{{ user.created_at[:10] if user.created_at else '-' }}</td>
+                <td>{{ format_date(user.created_at) }}</td>
                 <td>
                     {% if session.user_role == 'مدير' and user.id != session.user_id %}
                     <button class="btn btn-sm btn-danger" onclick="confirmDeleteUser({{ user.id }}, '{{ user.name }}')" title="{{ t('delete') }}">

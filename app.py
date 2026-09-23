@@ -46,11 +46,36 @@ app.register_blueprint(backups_bp)
 @app.context_processor
 def utility_processor():
     settings = get_company_settings()
+    
+    def format_date(dt, fmt='%Y-%m-%d'):
+        """تحويل datetime لـ string بأمان"""
+        if dt is None:
+            return '-'
+        if isinstance(dt, str):
+            return dt[:10] if fmt == '%Y-%m-%d' else dt
+        try:
+            return dt.strftime(fmt)
+        except:
+            return str(dt)
+    
+    def format_datetime(dt, fmt='%Y-%m-%d %H:%M'):
+        """تحويل datetime لـ string بأمان"""
+        if dt is None:
+            return '-'
+        if isinstance(dt, str):
+            return dt[:16] if fmt == '%Y-%m-%d %H:%M' else dt
+        try:
+            return dt.strftime(fmt)
+        except:
+            return str(dt)
+    
     return {
         't': t,
         'get_lang': get_lang,
         'datetime': datetime,
-        'settings': settings
+        'settings': settings,
+        'format_date': format_date,
+        'format_datetime': format_datetime,
     }
 
 

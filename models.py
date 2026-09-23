@@ -25,62 +25,76 @@ else:
 
 
 # ============================================================
+# ===== Helper: Format datetime =====
+# ============================================================
+def format_date(dt, fmt='%Y-%m-%d'):
+    """تحويل datetime لـ string بأمان"""
+    if dt is None:
+        return '-'
+    if isinstance(dt, str):
+        return dt[:10] if fmt == '%Y-%m-%d' else dt
+    try:
+        return dt.strftime(fmt)
+    except:
+        return str(dt)
+
+
+def format_datetime(dt, fmt='%Y-%m-%d %H:%M'):
+    """تحويل datetime لـ string بأمان"""
+    if dt is None:
+        return '-'
+    if isinstance(dt, str):
+        return dt[:16] if fmt == '%Y-%m-%d %H:%M' else dt
+    try:
+        return dt.strftime(fmt)
+    except:
+        return str(dt)
+
+
+# ============================================================
 # ===== PostgreSQL Support =====
 # ============================================================
 if USE_POSTGRES:
     import psycopg2
     import psycopg2.extras
     from psycopg2 import pool
-    
+
     _pg_pool = None
-    
+
     def _get_pg_pool():
         global _pg_pool
         if _pg_pool is None:
             try:
-                _pg_pool = psycopg2.pool.ThreadedConnectionPool(
-                    2, 50,
-                    DATABASE_URL
-                )
+                _pg_pool = psycopg2.pool.ThreadedConnectionPool(2, 50, DATABASE_URL)
                 print("✅ PostgreSQL pool created (2-50 connections)")
             except Exception as e:
                 print(f"❌ فشل إنشاء pool: {e}")
                 raise
         return _pg_pool
-    
-    
+
     class PostgresCursor:
         def __init__(self, conn):
             self._conn = conn
             self._cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        
+
         def execute(self, query, params=None):
             stripped = query.strip()
             upper = stripped.upper()
-            
-            # ✅ تجاهل PRAGMA
+
             if upper.startswith('PRAGMA'):
                 return self
-            
-            # ✅ تجاهل VACUUM و ANALYZE
             if upper.startswith(('VACUUM', 'ANALYZE')):
                 return self
-            
-            # ✅ تجاهل sqlite_sequence
             if 'sqlite_sequence' in query:
                 return self
-            
-            # ✅ تجاهل BEGIN IMMEDIATE
             if 'BEGIN IMMEDIATE' in upper:
                 return self
-            
-            # ✅ تجاهل COMMIT/ROLLBACK/BEGIN
             if upper in ('COMMIT', 'ROLLBACK', 'BEGIN'):
                 return self
-            
+
             query = query.replace('?', '%s')
             query = self._translate_query(query)
-            
+
             try:
                 if params is not None:
                     if not isinstance(params, (tuple, list)):
@@ -93,15 +107,58 @@ if USE_POSTGRES:
                 print(f"   Query: {query[:300]}")
                 print(f"   Params: {params}")
                 raise
-            
+
             return self
-        
+
         def _translate_query(self, query):
             """تحويل استعلامات SQLite لـ PostgreSQL"""
-            # دوال التاريخ
+
+            # ✅ 1. تحويل "text" إلى 'text' (PostgreSQL بيعتبر "..." اسم عمود)
+            # نحوّل النصوص العربية اللي بين " " لـ ' '
+            query = re.sub(r'"([^"]*[\u0600-\u06FF]+[^"]*)"', r"'\1'", query)
+
+            # ✅ 2. تحويل "status_text" المشابهة (نصوص إنجليزية قصيرة)
+            # نحوّل "نشط" (اللي ممكن تكون بالإنجليزي) بس بنسيب أسماء الأعمدة
+            # نحول النصوص اللي مش أسماء أعمدة معروفة
+            known_columns = [
+                'id', 'name', 'username', 'email', 'role', 'status', 'priority',
+                'title', 'description', 'created_at', 'updated_at', 'due_date',
+                'start_date', 'end_date', 'client_id', 'trainer_id', 'user_id',
+                'amount', 'paid_amount', 'contract_value', 'total_amount',
+                'payment_status', 'payment_date', 'payment_method', 'invoice_number',
+                'notes', 'phone', 'address', 'company_name', 'specialty',
+                'is_active', 'completion_percentage', 'task_group', 'meeting_id',
+                'estimated_duration', 'actual_duration', 'contract_payment_id',
+                'assigned_user_id', 'created_by', 'module_id', 'installment_number',
+                'file_name', 'file_path', 'file_size', 'file_type', 'uploaded_by',
+                'contract_id', 'module_type_id', 'client_id', 'is_read', 'message',
+                'task_id', 'action', 'details', 'ip_address', 'attempt_time',
+                'success', 'resource', 'permission_id', 'role_id', 'granted_by',
+                'user_id', 'is_default', 'due_date', 'paid_date', 'reminder_time',
+                'sent', 'duration', 'location', 'meeting_link', 'reminder_sent',
+                'notes', 'description', 'due_date', 'payment_method', 'amount',
+            ]
+
+            def replace_double_quotes(match):
+                content = match.group(1)
+                # لو المحتوى اسم عمود معروف، سيب الـ double quotes
+                if content.lower() in known_columns:
+                    return match.group(0)
+                # لو فيه عربي، حوّل
+                if re.search(r'[\u0600-\u06FF]', content):
+                    return f"'{content}'"
+                # لو نص طويل (زي جملة)، حوّل
+                if len(content) > 15:
+                    return f"'{content}'"
+                # غير كده، سيبه
+                return match.group(0)
+
+            query = re.sub(r'"([^"]+)"', replace_double_quotes, query)
+
+            # ✅ 3. دوال التاريخ
             query = re.sub(r"date\(['\"]now['\"]\)", "CURRENT_DATE", query)
             query = re.sub(r"datetime\(['\"]now['\"]\)", "NOW()", query)
-            
+
             query = re.sub(
                 r"date\(['\"]now['\"],\s*['\"]-(\d+)\s+days['\"]\)",
                 r"CURRENT_DATE - INTERVAL '\1 days'",
@@ -112,14 +169,14 @@ if USE_POSTGRES:
                 r"CURRENT_DATE + INTERVAL '\1 days'",
                 query
             )
-            
+
             query = re.sub(
                 r"strftime\(['\"]%Y-%m['\"],\s*([^)]+)\)",
                 r"TO_CHAR(\1, 'YYYY-MM')",
                 query
             )
-            
-            # ✅ GROUP_CONCAT → STRING_AGG
+
+            # ✅ 4. GROUP_CONCAT → STRING_AGG
             query = re.sub(
                 r"GROUP_CONCAT\(([^,]+),\s*['\"]([^'\"]+)['\"]\)",
                 r"STRING_AGG(\1, '\2')",
@@ -132,59 +189,58 @@ if USE_POSTGRES:
                 query,
                 flags=re.IGNORECASE
             )
-            
-            # INSERT OR IGNORE
+
+            # ✅ 5. INSERT OR IGNORE
             if 'INSERT OR IGNORE' in query:
                 query = query.replace('INSERT OR IGNORE', 'INSERT')
                 if 'ON CONFLICT' not in query:
                     query = query.rstrip(';').rstrip() + ' ON CONFLICT DO NOTHING'
-            
-            # INSERT OR REPLACE
+
+            # ✅ 6. INSERT OR REPLACE
             if 'INSERT OR REPLACE' in query:
                 query = query.replace('INSERT OR REPLACE', 'INSERT')
-            
+
             return query
-        
+
         def fetchone(self):
             return self._cursor.fetchone()
-        
+
         def fetchall(self):
             return self._cursor.fetchall()
-        
+
         def __iter__(self):
             return iter(self._cursor.fetchall())
-        
+
         @property
         def lastrowid(self):
             self._cursor.execute('SELECT lastval() as id')
             row = self._cursor.fetchone()
             return row['id'] if row else None
-        
+
         @property
         def rowcount(self):
             return self._cursor.rowcount
-        
+
         def close(self):
             self._cursor.close()
-    
-    
+
     class PostgresConnection:
         def __init__(self, conn):
             self._conn = conn
-        
+
         def execute(self, query, params=None):
             cursor = PostgresCursor(self._conn)
             return cursor.execute(query, params)
-        
+
         def cursor(self):
             return PostgresCursor(self._conn)
-        
+
         def commit(self):
             self._conn.commit()
-        
+
         def rollback(self):
             self._conn.rollback()
-        
+
         def close(self):
             try:
                 if self._conn and not self._conn.closed:
@@ -199,14 +255,13 @@ if USE_POSTGRES:
                     self._conn.close()
                 except:
                     pass
-        
+
         def __enter__(self):
             return self
-        
+
         def __exit__(self, *args):
             self.close()
-    
-    
+
     def get_db():
         try:
             conn = _get_pg_pool().getconn()
@@ -259,7 +314,6 @@ def verify_password(password, hashed):
 def get_user_permissions(user_id):
     conn = get_db()
     cursor = conn.cursor()
-    
     cursor.execute("""
         SELECT DISTINCT p.name
         FROM permissions p
@@ -268,27 +322,22 @@ def get_user_permissions(user_id):
         JOIN users u ON u.role = r.name
         WHERE u.id = ?
     """, (user_id,))
-    
     permissions = set()
     for row in cursor.fetchall():
         if isinstance(row, dict):
             permissions.add(row['name'])
         else:
             permissions.add(row[0])
-    
     cursor.execute("""
-        SELECT p.name
-        FROM permissions p
+        SELECT p.name FROM permissions p
         JOIN user_permissions up ON p.id = up.permission_id
         WHERE up.user_id = ?
     """, (user_id,))
-    
     for row in cursor.fetchall():
         if isinstance(row, dict):
             permissions.add(row['name'])
         else:
             permissions.add(row[0])
-    
     conn.close()
     return permissions
 
@@ -308,8 +357,7 @@ def add_permission_to_user(user_id, permission_name):
             if USE_POSTGRES:
                 cursor.execute("""
                     INSERT INTO user_permissions (user_id, permission_id)
-                    VALUES (%s, %s)
-                    ON CONFLICT (user_id, permission_id) DO NOTHING
+                    VALUES (%s, %s) ON CONFLICT (user_id, permission_id) DO NOTHING
                 """, (user_id, perm_id))
             else:
                 cursor.execute("""
@@ -348,10 +396,9 @@ def init_db():
 
 
 def _init_postgres():
-    """تهيئة PostgreSQL"""
     conn = get_db()
     real_cursor = conn._conn.cursor()
-    
+
     tables = [
         """CREATE TABLE IF NOT EXISTS company_settings (
             id SERIAL PRIMARY KEY, name TEXT NOT NULL, name_en TEXT,
@@ -371,29 +418,35 @@ def _init_postgres():
             address TEXT, company_name TEXT, notes TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
         """CREATE TABLE IF NOT EXISTS client_trainers (
-            id SERIAL PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+            id SERIAL PRIMARY KEY,
+            client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
             trainer_id INTEGER NOT NULL REFERENCES trainers(id) ON DELETE CASCADE,
             UNIQUE(client_id, trainer_id))""",
         """CREATE TABLE IF NOT EXISTS contract_types (
             id SERIAL PRIMARY KEY, name TEXT NOT NULL, description TEXT,
             is_active INTEGER DEFAULT 1, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
         """CREATE TABLE IF NOT EXISTS client_contracts (
-            id SERIAL PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+            id SERIAL PRIMARY KEY,
+            client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
             contract_type_id INTEGER REFERENCES contract_types(id),
             contract_number TEXT UNIQUE NOT NULL, title TEXT NOT NULL, description TEXT,
             start_date DATE NOT NULL, end_date DATE NOT NULL,
             contract_value REAL DEFAULT 0, total_amount REAL DEFAULT 0, paid_amount REAL DEFAULT 0,
             payment_status TEXT DEFAULT 'غير مدفوع', status TEXT DEFAULT 'نشط',
             file_path TEXT, notes TEXT, created_by INTEGER NOT NULL REFERENCES users(id),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
         """CREATE TABLE IF NOT EXISTS contract_payments (
-            id SERIAL PRIMARY KEY, contract_id INTEGER NOT NULL REFERENCES client_contracts(id) ON DELETE CASCADE,
-            installment_number INTEGER NOT NULL, amount REAL NOT NULL, paid_amount REAL DEFAULT 0,
-            due_date DATE NOT NULL, payment_date DATE, status TEXT DEFAULT 'مستحقة',
-            notes TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            id SERIAL PRIMARY KEY,
+            contract_id INTEGER NOT NULL REFERENCES client_contracts(id) ON DELETE CASCADE,
+            installment_number INTEGER NOT NULL, amount REAL NOT NULL,
+            paid_amount REAL DEFAULT 0, due_date DATE NOT NULL, payment_date DATE,
+            status TEXT DEFAULT 'مستحقة', notes TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
         """CREATE TABLE IF NOT EXISTS contract_attachments (
-            id SERIAL PRIMARY KEY, contract_id INTEGER NOT NULL REFERENCES client_contracts(id) ON DELETE CASCADE,
+            id SERIAL PRIMARY KEY,
+            contract_id INTEGER NOT NULL REFERENCES client_contracts(id) ON DELETE CASCADE,
             file_name TEXT NOT NULL, file_path TEXT NOT NULL, file_size INTEGER DEFAULT 0,
             file_type TEXT, uploaded_by INTEGER NOT NULL REFERENCES users(id),
             description TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
@@ -407,7 +460,8 @@ def _init_postgres():
             status TEXT DEFAULT 'نشط', start_date DATE, end_date DATE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
         """CREATE TABLE IF NOT EXISTS contract_modules (
-            id SERIAL PRIMARY KEY, contract_id INTEGER NOT NULL REFERENCES client_contracts(id) ON DELETE CASCADE,
+            id SERIAL PRIMARY KEY,
+            contract_id INTEGER NOT NULL REFERENCES client_contracts(id) ON DELETE CASCADE,
             module_type_id INTEGER NOT NULL REFERENCES module_types(id),
             quantity INTEGER DEFAULT 1, price REAL DEFAULT 0, notes TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
@@ -416,12 +470,14 @@ def _init_postgres():
             module_id INTEGER REFERENCES client_modules(id),
             amount REAL NOT NULL, payment_date DATE NOT NULL, due_date DATE,
             payment_method TEXT DEFAULT 'نقدي', status TEXT DEFAULT 'معلق',
-            invoice_number TEXT, notes TEXT, created_by INTEGER NOT NULL REFERENCES users(id),
+            invoice_number TEXT, notes TEXT,
+            created_by INTEGER NOT NULL REFERENCES users(id),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
         """CREATE TABLE IF NOT EXISTS payment_installments (
             id SERIAL PRIMARY KEY, payment_id INTEGER NOT NULL REFERENCES client_payments(id),
-            installment_number INTEGER NOT NULL, amount REAL NOT NULL, due_date DATE NOT NULL,
-            status TEXT DEFAULT 'مستحق', paid_date DATE, notes TEXT)""",
+            installment_number INTEGER NOT NULL, amount REAL NOT NULL,
+            due_date DATE NOT NULL, status TEXT DEFAULT 'مستحق',
+            paid_date DATE, notes TEXT)""",
         """CREATE TABLE IF NOT EXISTS meetings (
             id SERIAL PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id),
             title TEXT NOT NULL, description TEXT, meeting_date TIMESTAMP NOT NULL,
@@ -434,14 +490,16 @@ def _init_postgres():
             reminder_time TIMESTAMP NOT NULL, sent INTEGER DEFAULT 0)""",
         """CREATE TABLE IF NOT EXISTS tasks (
             id SERIAL PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id),
-            created_by INTEGER REFERENCES users(id), assigned_user_id INTEGER REFERENCES users(id),
+            created_by INTEGER REFERENCES users(id),
+            assigned_user_id INTEGER REFERENCES users(id),
             trainer_id INTEGER REFERENCES trainers(id), title TEXT NOT NULL, description TEXT,
             status TEXT DEFAULT 'لم تبدأ', priority TEXT DEFAULT 'متوسطة',
             due_date DATE NOT NULL, completion_percentage INTEGER DEFAULT 0,
             task_group TEXT, meeting_id INTEGER REFERENCES meetings(id),
             estimated_duration INTEGER DEFAULT 0, actual_duration INTEGER DEFAULT 0,
             contract_payment_id INTEGER REFERENCES contract_payments(id),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
         """CREATE TABLE IF NOT EXISTS task_updates (
             id SERIAL PRIMARY KEY, task_id INTEGER NOT NULL REFERENCES tasks(id),
             user_id INTEGER NOT NULL REFERENCES users(id), note TEXT, attachment_path TEXT,
@@ -474,16 +532,17 @@ def _init_postgres():
             granted_by INTEGER REFERENCES users(id),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE(user_id, permission_id))""",
     ]
-    
+
     for table_sql in tables:
         try:
             real_cursor.execute(table_sql)
         except Exception as e:
             print(f"⚠️ جدول: {e}")
             conn.rollback()
-    
+
     conn.commit()
-    
+
+    # ===== الصلاحيات =====
     default_permissions = [
         ('tasks.view', 'tasks', 'view', 'عرض المهام'),
         ('tasks.create', 'tasks', 'create', 'إنشاء مهام'),
@@ -507,7 +566,7 @@ def _init_postgres():
         ('users.edit', 'users', 'edit', 'تعديل المستخدمين'),
         ('users.delete', 'users', 'delete', 'حذف المستخدمين'),
     ]
-    
+
     for perm in default_permissions:
         try:
             real_cursor.execute("""
@@ -516,15 +575,15 @@ def _init_postgres():
             """, perm)
         except:
             conn.rollback()
-    
+
     conn.commit()
-    
+
     default_roles = [
         ('مدير', 'مدير النظام', 0),
         ('موظف', 'موظف عادي', 1),
         ('مراقب', 'مشاهد', 0),
     ]
-    
+
     for role in default_roles:
         try:
             real_cursor.execute("""
@@ -533,14 +592,14 @@ def _init_postgres():
             """, role)
         except:
             conn.rollback()
-    
+
     conn.commit()
-    
+
     real_cursor.execute("SELECT id, name FROM roles")
     roles_map = {r[1]: r[0] for r in real_cursor.fetchall()}
     real_cursor.execute("SELECT id, name FROM permissions")
     perms_map = {p[1]: p[0] for p in real_cursor.fetchall()}
-    
+
     if 'مدير' in roles_map:
         for pid in perms_map.values():
             try:
@@ -550,7 +609,7 @@ def _init_postgres():
                 """, (roles_map['مدير'], pid))
             except:
                 conn.rollback()
-    
+
     employee_perms = ['tasks.view', 'tasks.create', 'tasks.edit', 'tasks.assign',
         'clients.view', 'clients.create', 'clients.edit',
         'contracts.view', 'contracts.create', 'payments.view', 'payments.create', 'reports.view']
@@ -564,7 +623,7 @@ def _init_postgres():
                     """, (roles_map['موظف'], perms_map[pn]))
                 except:
                     conn.rollback()
-    
+
     viewer_perms = ['tasks.view', 'clients.view', 'contracts.view',
         'payments.view', 'reports.view', 'users.view']
     if 'مراقب' in roles_map:
@@ -577,9 +636,9 @@ def _init_postgres():
                     """, (roles_map['مراقب'], perms_map[pn]))
                 except:
                     conn.rollback()
-    
+
     conn.commit()
-    
+
     real_cursor.execute("SELECT * FROM company_settings LIMIT 1")
     if not real_cursor.fetchone():
         real_cursor.execute("""
@@ -587,7 +646,7 @@ def _init_postgres():
             VALUES (%s, %s, %s, %s, %s, %s)
         """, ('NQ', 'NQ Company', '+966 50 123 4567', 'الرياض', 'info@NQ.com', 'www.NQ.com'))
         conn.commit()
-    
+
     for uname, nname, em, rl in [
         ('Adminerp', 'مدير النظام', 'adminerp@company.com', 'مدير'),
         ('Fahd01', 'فهد المدير', 'fahd@company.com', 'مدير'),
@@ -605,11 +664,10 @@ def _init_postgres():
         except Exception as e:
             print(f"⚠️ مستخدم {uname}: {e}")
             conn.rollback()
-    
+
     try:
         real_cursor.execute("SELECT COUNT(*) FROM trainers")
-        count = real_cursor.fetchone()[0]
-        if count == 0:
+        if real_cursor.fetchone()[0] == 0:
             for t in [
                 ('أحمد سليمان', '0551234567', 'ahmed@trainer.com', 'تدريب تقني', 'مدرب معتمد', 1),
                 ('نورة القحطاني', '0552345678', 'noura@trainer.com', 'مهارات قيادية', 'مدربة معتمدة', 1),
@@ -623,11 +681,10 @@ def _init_postgres():
     except Exception as e:
         print(f"⚠️ trainers: {e}")
         conn.rollback()
-    
+
     try:
         real_cursor.execute("SELECT COUNT(*) FROM contract_types")
-        count = real_cursor.fetchone()[0]
-        if count == 0:
+        if real_cursor.fetchone()[0] == 0:
             for ct in [
                 ('عقد خدمات', 'عقد تقديم خدمات استشارية'),
                 ('عقد مقاولات', 'عقد أعمال مقاولات'),
@@ -641,17 +698,16 @@ def _init_postgres():
     except Exception as e:
         print(f"⚠️ contract_types: {e}")
         conn.rollback()
-    
+
     try:
         real_cursor.execute("SELECT COUNT(*) FROM module_types")
-        count = real_cursor.fetchone()[0]
-        if count == 0:
+        if real_cursor.fetchone()[0] == 0:
             for mt in [
-                ('نظام إدارة الموارد البشرية', 'نظام متكامل لإدارة الموظفين', 15000),
-                ('نظام المحاسبة', 'نظام محاسبي متكامل', 20000),
-                ('نظام إدارة العملاء CRM', 'نظام لإدارة علاقات العملاء', 12000),
-                ('نظام إدارة المشاريع', 'نظام لتخطيط المشاريع', 18000),
-                ('نظام نقاط البيع POS', 'نظام نقاط بيع متكامل', 10000)
+                ('نظام إدارة الموارد البشرية', 'نظام متكامل', 15000),
+                ('نظام المحاسبة', 'نظام محاسبي', 20000),
+                ('نظام إدارة العملاء CRM', 'نظام علاقات', 12000),
+                ('نظام إدارة المشاريع', 'نظام مشاريع', 18000),
+                ('نظام نقاط البيع POS', 'نظام نقاط بيع', 10000)
             ]:
                 real_cursor.execute("""
                     INSERT INTO module_types (name, description, price) VALUES (%s, %s, %s)
@@ -660,17 +716,17 @@ def _init_postgres():
     except Exception as e:
         print(f"⚠️ module_types: {e}")
         conn.rollback()
-    
+
     real_cursor.close()
     conn.close()
     print("✅ PostgreSQL initialized successfully")
 
 
 def _init_sqlite():
-    """تهيئة SQLite"""
+    """تهيئة SQLite - نفس الكود القديم"""
     conn = get_db()
     cursor = conn.cursor()
-    
+
     cursor.execute("""CREATE TABLE IF NOT EXISTS company_settings (
         id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, name_en TEXT,
         phone TEXT, address TEXT, logo_path TEXT, favicon_path TEXT,
@@ -790,7 +846,7 @@ def _init_sqlite():
         permission_id INTEGER NOT NULL, granted_by INTEGER,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(user_id, permission_id))""")
-    
+
     conn.commit()
     conn.close()
     print(f"✅ SQLite initialized at {DB_PATH}")
