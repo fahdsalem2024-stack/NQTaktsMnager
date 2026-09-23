@@ -37,7 +37,15 @@ if USE_POSTGRES:
     def _get_pg_pool():
         global _pg_pool
         if _pg_pool is None:
-            _pg_pool = psycopg2.pool.SimpleConnectionPool(1, 20, DATABASE_URL)
+            try:
+                _pg_pool = psycopg2.pool.ThreadedConnectionPool(
+                    2, 50,
+                    DATABASE_URL
+                )
+                print("✅ PostgreSQL pool created (2-50 connections)")
+            except Exception as e:
+                print(f"❌ فشل إنشاء pool: {e}")
+                raise
         return _pg_pool
     
     
@@ -47,20 +55,42 @@ if USE_POSTGRES:
             self._cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         def execute(self, query, params=None):
+            # ✅ تجاهل PRAGMA (خاص بـ SQLite فقط)
+            if query.strip().upper().startswith('PRAGMA'):
+                return self
+            
+            # ✅ تجاهل VACUUM و ANALYZE
+            if query.strip().upper().startswith(('VACUUM', 'ANALYZE')):
+                return self
+            
+            # ✅ تجاهل sqlite_sequence
+            if 'sqlite_sequence' in query:
+                return self
+            
             query = query.replace('?', '%s')
             query = self._translate_query(query)
             
-            if params is not None:
-                if not isinstance(params, (tuple, list)):
-                    params = (params,)
-                self._cursor.execute(query, params)
-            else:
-                self._cursor.execute(query)
+            try:
+                if params is not None:
+                    if not isinstance(params, (tuple, list)):
+                        params = (params,)
+                    self._cursor.execute(query, params)
+                else:
+                    self._cursor.execute(query)
+            except Exception as e:
+                print(f"❌ خطأ في الاستعلام: {e}")
+                print(f"   Query: {query[:200]}")
+                print(f"   Params: {params}")
+                raise
+            
             return self
         
         def _translate_query(self, query):
+            """تحويل استعلامات SQLite لـ PostgreSQL"""
+            # دوال التاريخ
             query = re.sub(r"date\(['\"]now['\"]\)", "CURRENT_DATE", query)
             query = re.sub(r"datetime\(['\"]now['\"]\)", "NOW()", query)
+            
             query = re.sub(
                 r"date\(['\"]now['\"],\s*['\"]-(\d+)\s+days['\"]\)",
                 r"CURRENT_DATE - INTERVAL '\1 days'",
@@ -71,15 +101,23 @@ if USE_POSTGRES:
                 r"CURRENT_DATE + INTERVAL '\1 days'",
                 query
             )
+            
             query = re.sub(
                 r"strftime\(['\"]%Y-%m['\"],\s*([^)]+)\)",
                 r"TO_CHAR(\1, 'YYYY-MM')",
                 query
             )
+            
+            # INSERT OR IGNORE
             if 'INSERT OR IGNORE' in query:
                 query = query.replace('INSERT OR IGNORE', 'INSERT')
                 if 'ON CONFLICT' not in query:
-                    query = query.rstrip(';') + ' ON CONFLICT DO NOTHING'
+                    query = query.rstrip(';').rstrip() + ' ON CONFLICT DO NOTHING'
+            
+            # INSERT OR REPLACE
+            if 'INSERT OR REPLACE' in query:
+                query = query.replace('INSERT OR REPLACE', 'INSERT')
+            
             return query
         
         def fetchone(self):
@@ -124,9 +162,18 @@ if USE_POSTGRES:
         
         def close(self):
             try:
-                _get_pg_pool().putconn(self._conn)
-            except:
-                self._conn.close()
+                if self._conn and not self._conn.closed:
+                    try:
+                        self._conn.rollback()
+                    except:
+                        pass
+                    _get_pg_pool().putconn(self._conn)
+            except Exception as e:
+                print(f"⚠️ خطأ في إغلاق الاتصال: {e}")
+                try:
+                    self._conn.close()
+                except:
+                    pass
         
         def __enter__(self):
             return self
@@ -136,8 +183,13 @@ if USE_POSTGRES:
     
     
     def get_db():
-        conn = _get_pg_pool().getconn()
-        return PostgresConnection(conn)
+        try:
+            conn = _get_pg_pool().getconn()
+            return PostgresConnection(conn)
+        except Exception as e:
+            print(f"❌ فشل الحصول على اتصال: {e}")
+            raise
+
 
 # ============================================================
 # ===== SQLite Support =====
@@ -273,13 +325,8 @@ def init_db():
 def _init_postgres():
     """تهيئة PostgreSQL"""
     conn = get_db()
-    cursor = conn.cursor()
-    
-    # الحصول على cursor حقيقي للتعامل مع PostgreSQL
-    if USE_POSTGRES:
-        real_cursor = conn._conn.cursor()
-    else:
-        real_cursor = cursor._cursor
+    # استخدام cursor مباشر
+    real_cursor = conn._conn.cursor()
     
     tables = [
         """CREATE TABLE IF NOT EXISTS company_settings (
@@ -409,6 +456,7 @@ def _init_postgres():
             real_cursor.execute(table_sql)
         except Exception as e:
             print(f"⚠️ جدول: {e}")
+            conn.rollback()
     
     conn.commit()
     
@@ -444,7 +492,7 @@ def _init_postgres():
                 VALUES (%s, %s, %s, %s) ON CONFLICT (name) DO NOTHING
             """, perm)
         except:
-            pass
+            conn.rollback()
     
     conn.commit()
     
@@ -461,7 +509,7 @@ def _init_postgres():
                 VALUES (%s, %s, %s) ON CONFLICT (name) DO NOTHING
             """, role)
         except:
-            pass
+            conn.rollback()
     
     conn.commit()
     
@@ -479,7 +527,7 @@ def _init_postgres():
                     VALUES (%s, %s) ON CONFLICT DO NOTHING
                 """, (roles_map['مدير'], pid))
             except:
-                pass
+                conn.rollback()
     
     employee_perms = ['tasks.view', 'tasks.create', 'tasks.edit', 'tasks.assign',
         'clients.view', 'clients.create', 'clients.edit',
@@ -493,7 +541,7 @@ def _init_postgres():
                         VALUES (%s, %s) ON CONFLICT DO NOTHING
                     """, (roles_map['موظف'], perms_map[pn]))
                 except:
-                    pass
+                    conn.rollback()
     
     viewer_perms = ['tasks.view', 'clients.view', 'contracts.view',
         'payments.view', 'reports.view', 'users.view']
@@ -506,7 +554,7 @@ def _init_postgres():
                         VALUES (%s, %s) ON CONFLICT DO NOTHING
                     """, (roles_map['مراقب'], perms_map[pn]))
                 except:
-                    pass
+                    conn.rollback()
     
     conn.commit()
     
@@ -517,6 +565,7 @@ def _init_postgres():
             INSERT INTO company_settings (name, name_en, phone, address, email, website)
             VALUES (%s, %s, %s, %s, %s, %s)
         """, ('NQ', 'NQ Company', '+966 50 123 4567', 'الرياض', 'info@NQ.com', 'www.NQ.com'))
+        conn.commit()
     
     for uname, nname, em, rl in [
         ('Adminerp', 'مدير النظام', 'adminerp@company.com', 'مدير'),
@@ -524,16 +573,80 @@ def _init_postgres():
         ('employee1', 'سارة موظف', 'sara@company.com', 'موظف'),
         ('viewer1', 'خالد مراقب', 'khalid@company.com', 'مراقب'),
     ]:
-        real_cursor.execute("SELECT * FROM users WHERE username = %s", (uname,))
-        if not real_cursor.fetchone():
-            real_cursor.execute("""
-                INSERT INTO users (username, name, email, password, role)
-                VALUES (%s, %s, %s, %s, %s)
-            """, (uname, nname, em, hash_password('1234'), rl))
+        try:
+            real_cursor.execute("SELECT * FROM users WHERE username = %s", (uname,))
+            if not real_cursor.fetchone():
+                real_cursor.execute("""
+                    INSERT INTO users (username, name, email, password, role)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (uname, nname, em, hash_password('1234'), rl))
+                conn.commit()
+        except Exception as e:
+            print(f"⚠️ مستخدم {uname}: {e}")
+            conn.rollback()
     
-    conn.commit()
+    # المدربين الافتراضيين
+    try:
+        real_cursor.execute("SELECT COUNT(*) FROM trainers")
+        count = real_cursor.fetchone()[0]
+        if count == 0:
+            trainers_data = [
+                ('أحمد سليمان', '0551234567', 'ahmed@trainer.com', 'تدريب تقني', 'مدرب معتمد', 1),
+                ('نورة القحطاني', '0552345678', 'noura@trainer.com', 'مهارات قيادية', 'مدربة معتمدة', 1),
+                ('خالد المالكي', '0553456789', 'khalid@trainer.com', 'تطوير برمجيات', 'متخصص', 1)
+            ]
+            for t in trainers_data:
+                real_cursor.execute("""
+                    INSERT INTO trainers (name, phone, email, specialty, notes, is_active)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, t)
+            conn.commit()
+    except Exception as e:
+        print(f"⚠️ trainers: {e}")
+        conn.rollback()
+    
+    # أنواع العقود الافتراضية
+    try:
+        real_cursor.execute("SELECT COUNT(*) FROM contract_types")
+        count = real_cursor.fetchone()[0]
+        if count == 0:
+            for ct in [
+                ('عقد خدمات', 'عقد تقديم خدمات استشارية'),
+                ('عقد مقاولات', 'عقد أعمال مقاولات'),
+                ('عقد توريد', 'عقد توريد مواد'),
+                ('عقد تدريب', 'عقد دورات تدريبية')
+            ]:
+                real_cursor.execute("""
+                    INSERT INTO contract_types (name, description) VALUES (%s, %s)
+                """, ct)
+            conn.commit()
+    except Exception as e:
+        print(f"⚠️ contract_types: {e}")
+        conn.rollback()
+    
+    # أنواع المديولات الافتراضية
+    try:
+        real_cursor.execute("SELECT COUNT(*) FROM module_types")
+        count = real_cursor.fetchone()[0]
+        if count == 0:
+            for mt in [
+                ('نظام إدارة الموارد البشرية', 'نظام متكامل لإدارة الموظفين', 15000),
+                ('نظام المحاسبة', 'نظام محاسبي متكامل', 20000),
+                ('نظام إدارة العملاء CRM', 'نظام لإدارة علاقات العملاء', 12000),
+                ('نظام إدارة المشاريع', 'نظام لتخطيط المشاريع', 18000),
+                ('نظام نقاط البيع POS', 'نظام نقاط بيع متكامل', 10000)
+            ]:
+                real_cursor.execute("""
+                    INSERT INTO module_types (name, description, price) VALUES (%s, %s, %s)
+                """, mt)
+            conn.commit()
+    except Exception as e:
+        print(f"⚠️ module_types: {e}")
+        conn.rollback()
+    
+    real_cursor.close()
     conn.close()
-    print("✅ PostgreSQL initialized")
+    print("✅ PostgreSQL initialized successfully")
 
 
 def _init_sqlite():
@@ -541,7 +654,6 @@ def _init_sqlite():
     conn = get_db()
     cursor = conn.cursor()
     
-    # نفس الكود القديم
     cursor.execute("""CREATE TABLE IF NOT EXISTS company_settings (
         id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, name_en TEXT,
         phone TEXT, address TEXT, logo_path TEXT, favicon_path TEXT,
@@ -561,9 +673,7 @@ def _init_sqlite():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
     cursor.execute("""CREATE TABLE IF NOT EXISTS client_trainers (
         id INTEGER PRIMARY KEY AUTOINCREMENT, client_id INTEGER NOT NULL,
-        trainer_id INTEGER NOT NULL, UNIQUE(client_id, trainer_id),
-        FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
-        FOREIGN KEY (trainer_id) REFERENCES trainers(id) ON DELETE CASCADE)""")
+        trainer_id INTEGER NOT NULL, UNIQUE(client_id, trainer_id))""")
     cursor.execute("""CREATE TABLE IF NOT EXISTS tasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT, client_id INTEGER NOT NULL,
         created_by INTEGER, assigned_user_id INTEGER, trainer_id INTEGER,
@@ -665,9 +775,14 @@ def _init_sqlite():
         UNIQUE(user_id, permission_id))""")
     
     conn.commit()
-    print(f"✅ SQLite initialized at {DB_PATH}")
     conn.close()
+    print(f"✅ SQLite initialized at {DB_PATH}")
 
 
 # ===== استدعاء التهيئة =====
-init_db()
+try:
+    init_db()
+except Exception as e:
+    print(f"❌ خطأ في تهيئة قاعدة البيانات: {e}")
+    import traceback
+    traceback.print_exc()
