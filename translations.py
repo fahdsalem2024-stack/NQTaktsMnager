@@ -147,6 +147,26 @@ translations = {
         'meeting_link': 'رابط الاجتماع',
         'task_group_hint': 'اسم المجموعة (اختياري)',
         'link_to_payment': 'ربط بدفعة عقد',
+        # ===== Module Types & Client Modules =====
+        'module_types': 'أنواع المديولات',
+        'add_module_type': 'إضافة نوع مديول',
+        'add_new_module_type': 'إضافة نوع مديول جديد',
+        'edit_module_type': 'تعديل نوع المديول',
+        'total_types': 'إجمالي الأنواع',
+        'search_modules_placeholder': 'بحث باسم المديول أو الوصف...',
+        'module_type_singular': 'نوع',
+        'module_name_hint': 'مثال: نظام إدارة الموارد البشرية',
+        'module_desc_hint': 'وصف المديول',
+        'no_modules_for_client': 'لا توجد مديولات لهذا العميل',
+        'add_module_for_client': 'قم بإضافة مديول جديد للعميل',
+        'confirm_delete_module': 'هل أنت متأكد من حذف هذا المديول؟',
+        
+        # ===== Revenue Report =====
+        'revenue_report': 'تقرير الإيرادات',
+        'revenue_by_client': 'الإيرادات حسب العميل',
+        'revenue_by_month': 'الإيرادات حسب الشهر',
+        'no_revenue_recorded': 'لا توجد إيرادات مسجلة',
+        'month': 'الشهر',
         'choose_payment': 'اختر الدفعة المرتبطة بالتدريب',
         'no_link': '-- بدون ربط --',
         'payment_link_hint': 'عند اكتمال هذا التدريب، سيتم تفعيل الدفعة المختارة تلقائياً',
@@ -459,6 +479,26 @@ translations = {
 
         # ===== Main Menu =====
         'home': 'Home',
+        # ===== Module Types & Client Modules =====
+        'module_types': 'Module Types',
+        'add_module_type': 'Add Module Type',
+        'add_new_module_type': 'Add New Module Type',
+        'edit_module_type': 'Edit Module Type',
+        'total_types': 'Total Types',
+        'search_modules_placeholder': 'Search by module name or description...',
+        'module_type_singular': 'type',
+        'module_name_hint': 'Example: HR Management System',
+        'module_desc_hint': 'Module description',
+        'no_modules_for_client': 'No modules for this client',
+        'add_module_for_client': 'Add a new module for client',
+        'confirm_delete_module': 'Are you sure you want to delete this module?',
+        
+        # ===== Revenue Report =====
+        'revenue_report': 'Revenue Report',
+        'revenue_by_client': 'Revenue by Client',
+        'revenue_by_month': 'Revenue by Month',
+        'no_revenue_recorded': 'No revenue recorded',
+        'month': 'Month',
         'management': 'Management',
         'clients': 'Clients',
         'trainers': 'Trainers',

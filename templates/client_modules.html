@@ -1,19 +1,19 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
     <div>
-        <h2><i class="bi bi-grid"></i> المديولات - {{ client.name }}</h2>
+        <h2><i class="bi bi-grid"></i> {{ t('modules') }} - {{ client.name }}</h2>
         {% if client.company_name %}
         <h5 class="text-muted">{{ client.company_name }}</h5>
         {% endif %}
     </div>
     <div>
         <a href="/add_module/{{ client.id }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> إضافة مديول
+            <i class="bi bi-plus-circle"></i> {{ t('add_module') }}
         </a>
         <a href="/clients" class="btn btn-secondary">
-            <i class="bi bi-arrow-right"></i> رجوع
+            <i class="bi bi-arrow-right"></i> {{ t('back') }}
         </a>
     </div>
 </div>
@@ -24,13 +24,13 @@
         <thead>
             <tr>
                 <th>#</th>
-                <th>اسم المديول</th>
-                <th>الوصف</th>
-                <th>السعر</th>
-                <th>الحالة</th>
-                <th>تاريخ البداية</th>
-                <th>تاريخ النهاية</th>
-                <th>إجراءات</th>
+                <th>{{ t('module_name') }}</th>
+                <th>{{ t('description') }}</th>
+                <th>{{ t('module_price') }}</th>
+                <th>{{ t('status') }}</th>
+                <th>{{ t('start_date') }}</th>
+                <th>{{ t('end_date') }}</th>
+                <th>{{ t('actions') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -39,14 +39,17 @@
                 <td>{{ module.id }}</td>
                 <td><strong>{{ module.name }}</strong></td>
                 <td>{{ module.description or '-' }}</td>
-                <td>{{ module.price }} ج.م</td>
+                <td>{{ module.price }} {{ t('currency') }}</td>
                 <td>
                     <span class="badge 
                         {% if module.status == 'نشط' %}bg-success
                         {% elif module.status == 'قيد التطوير' %}bg-warning text-dark
                         {% elif module.status == 'مكتمل' %}bg-info
                         {% else %}bg-secondary{% endif %}">
-                        {{ module.status }}
+                        {% if module.status == 'نشط' %}{{ t('status_active') }}
+                        {% elif module.status == 'قيد التطوير' %}{{ t('in_development') }}
+                        {% elif module.status == 'مكتمل' %}{{ t('completed_module') }}
+                        {% else %}{{ t('stopped') }}{% endif %}
                     </span>
                 </td>
                 <td>{{ module.start_date or '-' }}</td>
@@ -67,15 +70,15 @@
 {% else %}
 <div class="alert alert-info text-center">
     <i class="bi bi-grid" style="font-size:48px;display:block;"></i>
-    <h4>لا توجد مديولات لهذا العميل</h4>
-    <p>قم بإضافة مديول جديد للعميل {{ client.name }}</p>
-    <a href="/add_module/{{ client.id }}" class="btn btn-primary mt-2">➕ إضافة مديول</a>
+    <h4>{{ t('no_modules_for_client') }}</h4>
+    <p>{{ t('add_module_for_client') }} {{ client.name }}</p>
+    <a href="/add_module/{{ client.id }}" class="btn btn-primary mt-2">➕ {{ t('add_module') }}</a>
 </div>
 {% endif %}
 
 <script>
 function deleteModule(moduleId) {
-    if (confirm('⚠️ هل أنت متأكد من حذف هذا المديول؟\n\nهذا الإجراء لا يمكن التراجع عنه!')) {
+    if (confirm('⚠️ {{ t("confirm_delete_module") }}\n\n{{ t("action_cannot_be_undone") }}')) {
         var form = document.createElement('form');
         form.method = 'POST';
         form.action = '/delete_module/' + moduleId;
