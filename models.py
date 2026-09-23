@@ -56,7 +56,14 @@ if USE_POSTGRES:
         global _pg_pool
         if _pg_pool is None:
             try:
-                _pg_pool = psycopg2.pool.ThreadedConnectionPool(2, 50, DATABASE_URL)
+                _pg_pool = psycopg2.pool.ThreadedConnectionPool(
+                    2, 50,
+                    DATABASE_URL,
+                    keepalives=1,
+                    keepalives_idle=30,
+                    keepalives_interval=10,
+                    keepalives_count=5,
+                )
                 print("✅ PostgreSQL pool created (2-50 connections)")
             except Exception as e:
                 print(f"❌ فشل إنشاء pool: {e}")
@@ -103,47 +110,39 @@ if USE_POSTGRES:
 
         def _translate_query(self, query):
             """تحويل استعلامات SQLite لـ PostgreSQL"""
-
-            # ✅ 1. معالجة date() و datetime() بـ double quotes الأول
-            # date("now", "-1 day") → (CURRENT_DATE - INTERVAL '1 day')
+            # 1. معالجة date() و datetime()
             query = re.sub(
                 r"date\(\s*[\"']now[\"']\s*,\s*[\"']-(\d+)\s+days?[\"']\s*\)",
                 r"(CURRENT_DATE - INTERVAL '\1 days')",
                 query
             )
-            
-            # date("now", "+N days")
             query = re.sub(
                 r"date\(\s*[\"']now[\"']\s*,\s*[\"']\+?(\d+)\s+days?[\"']\s*\)",
                 r"(CURRENT_DATE + INTERVAL '\1 days')",
                 query
             )
-            
-            # date("now") بدون إضافات
             query = re.sub(
                 r"date\(\s*[\"']now[\"']\s*\)",
                 r"CURRENT_DATE",
                 query
             )
-            
-            # datetime("now") → NOW()
             query = re.sub(
                 r"datetime\(\s*[\"']now[\"']\s*\)",
                 r"NOW()",
                 query
             )
 
-            # ✅ 2. تحويل "text" إلى 'text' (النصوص العربية)
+            # 2. تحويل "text" إلى 'text' (النصوص العربية)
             query = re.sub(r'"([^"]*[\u0600-\u06FF]+[^"]*)"', r"'\1'", query)
 
-            # ✅ 3. strftime
+            # 3. strftime
             query = re.sub(
                 r"strftime\(['\"]%Y-%m['\"],\s*([^)]+)\)",
                 r"TO_CHAR(\1, 'YYYY-MM')",
                 query
             )
 
-            # ✅ 4. GROUP_CONCAT → STRING_AGG
+            # 4. GROUP_CONCAT → STRING_AGG
             query = re.sub(
                 r"GROUP_CONCAT\(([^,]+),\s*['\"]([^'\"]+)['\"]\)",
                 r"STRING_AGG(\1, '\2')",
@@ -157,13 +156,13 @@ if USE_POSTGRES:
                 flags=re.IGNORECASE
             )
 
-            # ✅ 5. INSERT OR IGNORE
+            # 5. INSERT OR IGNORE
             if 'INSERT OR IGNORE' in query:
                 query = query.replace('INSERT OR IGNORE', 'INSERT')
                 if 'ON CONFLICT' not in query:
                     query = query.rstrip(';').rstrip() + ' ON CONFLICT DO NOTHING'
 
-            # ✅ 6. INSERT OR REPLACE
+            # 6. INSERT OR REPLACE
             if 'INSERT OR REPLACE' in query:
                 query = query.replace('INSERT OR REPLACE', 'INSERT')
 
@@ -230,8 +229,24 @@ if USE_POSTGRES:
             self.close()
 
     def get_db():
+        """إرجاع اتصال PostgreSQL (مع فحص صلاحية الاتصال)"""
         try:
-            conn = _get_pg_pool().getconn()
+            pool = _get_pg_pool()
+            conn = pool.getconn()
+            
+            # ✅ فحص الاتصال قبل الإرجاع
+            try:
+                cur = conn.cursor()
+                cur.execute('SELECT 1')
+                cur.close()
+            except (psycopg2.InterfaceError, psycopg2.OperationalError) as e:
+                print(f"⚠️ Connection ميت، بنستبدله: {e}")
+                try:
+                    pool.putconn(conn, close=True)
+                except:
+                    pass
+                conn = pool.getconn()
+            
             return PostgresConnection(conn)
         except Exception as e:
             print(f"❌ فشل الحصول على اتصال: {e}")

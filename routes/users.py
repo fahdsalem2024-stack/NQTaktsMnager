@@ -12,13 +12,25 @@ def users():
         flash('⛔ غير مصرح لك', 'danger')
         return redirect(url_for('index'))
     
-    conn = get_db()
-    users_list = conn.execute('''
-        SELECT * FROM users ORDER BY created_at DESC
-    ''').fetchall()
-    conn.close()
-    
-    return render_template('users.html', users=users_list)
+    conn = None
+    try:
+        conn = get_db()
+        users_list = conn.execute('''
+            SELECT * FROM users ORDER BY created_at DESC
+        ''').fetchall()
+        return render_template('users.html', users=users_list)
+    except Exception as e:
+        print(f"❌ خطأ في users: {e}")
+        import traceback
+        traceback.print_exc()
+        flash('❌ حدث خطأ في تحميل المستخدمين. حاول مرة أخرى.', 'danger')
+        return redirect(url_for('index'))
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except:
+                pass
 
 
 @users_bp.route('/add_user', methods=['GET', 'POST'])
@@ -86,21 +98,19 @@ def add_user():
             except Exception as email_error:
                 print(f"⚠️ فشل إرسال إيميل ترحيبي: {email_error}")
             
-        except sqlite3.IntegrityError as e:
-            # في حالة حدوث تكرار (حماية إضافية)
-            print(f"⚠️ IntegrityError: {e}")
-            if 'username' in str(e).lower():
-                flash('❌ اسم المستخدم موجود مسبقاً', 'danger')
-            elif 'email' in str(e).lower():
-                flash('❌ البريد الإلكتروني موجود مسبقاً', 'danger')
-            else:
-                flash('❌ خطأ في إضافة المستخدم', 'danger')
-        
         except Exception as e:
             print(f"❌ خطأ في add_user: {e}")
             import traceback
             traceback.print_exc()
-            flash(f'❌ حدث خطأ: {str(e)}', 'danger')
+            
+            # ✅ التعامل مع أخطاء التكرار
+            error_str = str(e).lower()
+            if 'username' in error_str or 'duplicate' in error_str:
+                flash('❌ اسم المستخدم موجود مسبقاً', 'danger')
+            elif 'email' in error_str:
+                flash('❌ البريد الإلكتروني موجود مسبقاً', 'danger')
+            else:
+                flash(f'❌ حدث خطأ: {str(e)}', 'danger')
         
         finally:
             conn.close()
