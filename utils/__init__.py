@@ -31,5 +31,20 @@ from .excel_export import (
     export_full_report,
 )
 
+# ===== Email Utils =====
+from .email_utils import (
+    mail,
+    init_mail,
+    send_email,
+    email_base_template,
+    send_welcome_email,
+    send_task_assigned_email,
+    send_task_status_update_email,
+    send_payment_received_email,
+    send_contract_created_email,
+    send_password_reset_email,
+    send_overdue_payment_reminder,
+)
+
 # استيراد الديكورات من decorators.py
 from .decorators import login_required, role_required, permission_required
