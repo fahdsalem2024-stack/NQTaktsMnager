@@ -2,29 +2,32 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-    <h2><i class="bi bi-graph-up-arrow text-primary"></i> تقارير متقدمة</h2>
+    <h2><i class="bi bi-graph-up-arrow text-primary"></i> {{ t('advanced_reports') }}</h2>
     <div>
         <button onclick="window.print()" class="btn btn-outline-secondary">
-            <i class="bi bi-printer"></i> طباعة
+            <i class="bi bi-printer"></i> {{ t('print') }}
         </button>
+        <a href="/reports" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-right"></i> {{ t('back') }}
+        </a>
     </div>
 </div>
 
 <!-- ===== توقعات الإيرادات ===== -->
 <div class="card mb-4">
     <div class="card-header bg-primary text-white">
-        <h5 class="mb-0"><i class="bi bi-graph-up"></i> توقعات الإيرادات للشهور القادمة</h5>
+        <h5 class="mb-0"><i class="bi bi-graph-up"></i> {{ t('revenue_forecast') }}</h5>
     </div>
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-modern">
                 <thead>
                     <tr>
-                        <th>الشهر</th>
-                        <th>المتوقع (ر.س)</th>
-                        <th>المدفوع (ر.س)</th>
-                        <th>المتبقي (ر.س)</th>
-                        <th>نسبة التحصيل</th>
+                        <th>{{ t('month') }}</th>
+                        <th>{{ t('expected') }} ({{ t('currency') }})</th>
+                        <th>{{ t('paid') }} ({{ t('currency') }})</th>
+                        <th>{{ t('remaining') }} ({{ t('currency') }})</th>
+                        <th>{{ t('collection_rate') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -51,7 +54,7 @@
 <!-- ===== أفضل العملاء ===== -->
 <div class="card mb-4">
     <div class="card-header bg-success text-white">
-        <h5 class="mb-0"><i class="bi bi-trophy"></i> أفضل العملاء (حسب الإنفاق)</h5>
+        <h5 class="mb-0"><i class="bi bi-trophy"></i> {{ t('top_clients') }}</h5>
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -59,11 +62,11 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>اسم العميل</th>
-                        <th>عدد العقود</th>
-                        <th>إجمالي الإنفاق</th>
-                        <th>المدفوع</th>
-                        <th>المتبقي</th>
+                        <th>{{ t('client_name') }}</th>
+                        <th>{{ t('contracts_count') }}</th>
+                        <th>{{ t('total_spending') }}</th>
+                        <th>{{ t('paid') }}</th>
+                        <th>{{ t('remaining') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -72,9 +75,9 @@
                         <td>{{ loop.index }}</td>
                         <td><span class="fw-bold">{{ client.name }}</span></td>
                         <td>{{ client.contracts_count }}</td>
-                        <td>{{ client.total_amount }} ر.س</td>
-                        <td class="text-success">{{ client.paid_amount }} ر.س</td>
-                        <td class="text-danger">{{ client.remaining }} ر.س</td>
+                        <td>{{ client.total_amount }} {{ t('currency') }}</td>
+                        <td class="text-success">{{ client.paid_amount }} {{ t('currency') }}</td>
+                        <td class="text-danger">{{ client.remaining }} {{ t('currency') }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -86,7 +89,7 @@
 <!-- ===== أداء المدربين ===== -->
 <div class="card">
     <div class="card-header bg-info text-white">
-        <h5 class="mb-0"><i class="bi bi-person-badge"></i> أداء المدربين</h5>
+        <h5 class="mb-0"><i class="bi bi-person-badge"></i> {{ t('trainers_performance') }}</h5>
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -94,11 +97,11 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>اسم المدرب</th>
-                        <th>عدد العملاء</th>
-                        <th>عدد التدريبات</th>
-                        <th>المكتملة</th>
-                        <th>نسبة الإنجاز</th>
+                        <th>{{ t('trainer_name') }}</th>
+                        <th>{{ t('clients_count') }}</th>
+                        <th>{{ t('tasks_count') }}</th>
+                        <th>{{ t('completed_tasks') }}</th>
+                        <th>{{ t('completion_rate') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -142,5 +145,10 @@
 .table-modern tbody tr:hover { background: #f8fafc; }
 .progress { border-radius: 50px; background: #e2e8f0; }
 .progress-bar { border-radius: 50px; }
+@media print {
+    .btn, .navbar, .footer { display: none !important; }
+    .card { box-shadow: none !important; border: 1px solid #ddd !important; }
+    body { background: white !important; }
+}
 </style>
 {% endblock %}
