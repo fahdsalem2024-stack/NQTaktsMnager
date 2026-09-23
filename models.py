@@ -4,42 +4,168 @@ import sqlite3
 from datetime import datetime
 import hashlib
 import bcrypt
+import re
 
-# ===== مسار قاعدة البيانات =====
-DB_PATH = os.environ.get('DB_PATH', '/app/data/tasks.db')
+# ===== كشف نوع قاعدة البيانات =====
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
-# للأجهزة المحلية: لو مش على Railway، استخدم مجلد محلي
-if not os.path.exists('/app'):
-    DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tasks.db')
+if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
-# تأكد إن مجلد قاعدة البيانات موجود
-os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-
-
-def get_db():
+if DATABASE_URL and DATABASE_URL.startswith('postgresql://'):
+    USE_POSTGRES = True
+    print("✅ Using PostgreSQL")
+else:
+    USE_POSTGRES = False
+    DB_PATH = os.environ.get('DB_PATH', '/app/data/tasks.db')
+    if not os.path.exists('/app'):
+        DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tasks.db')
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH, timeout=30)
-    conn.row_factory = sqlite3.Row
-    conn.execute('PRAGMA journal_mode=WAL')
-    conn.execute('PRAGMA synchronous=NORMAL')
-    conn.execute('PRAGMA cache_size=10000')
-    conn.execute('PRAGMA busy_timeout=30000')
-    return conn
+    print(f"⚠️ Using SQLite at {DB_PATH}")
 
 
+# ============================================================
+# ===== PostgreSQL Support =====
+# ============================================================
+if USE_POSTGRES:
+    import psycopg2
+    import psycopg2.extras
+    from psycopg2 import pool
+    
+    _pg_pool = None
+    
+    def _get_pg_pool():
+        global _pg_pool
+        if _pg_pool is None:
+            _pg_pool = psycopg2.pool.SimpleConnectionPool(1, 20, DATABASE_URL)
+        return _pg_pool
+    
+    
+    class PostgresCursor:
+        def __init__(self, conn):
+            self._conn = conn
+            self._cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        def execute(self, query, params=None):
+            query = query.replace('?', '%s')
+            query = self._translate_query(query)
+            
+            if params is not None:
+                if not isinstance(params, (tuple, list)):
+                    params = (params,)
+                self._cursor.execute(query, params)
+            else:
+                self._cursor.execute(query)
+            return self
+        
+        def _translate_query(self, query):
+            query = re.sub(r"date\(['\"]now['\"]\)", "CURRENT_DATE", query)
+            query = re.sub(r"datetime\(['\"]now['\"]\)", "NOW()", query)
+            query = re.sub(
+                r"date\(['\"]now['\"],\s*['\"]-(\d+)\s+days['\"]\)",
+                r"CURRENT_DATE - INTERVAL '\1 days'",
+                query
+            )
+            query = re.sub(
+                r"date\(['\"]now['\"],\s*['\"]\+?(\d+)\s+days['\"]\)",
+                r"CURRENT_DATE + INTERVAL '\1 days'",
+                query
+            )
+            query = re.sub(
+                r"strftime\(['\"]%Y-%m['\"],\s*([^)]+)\)",
+                r"TO_CHAR(\1, 'YYYY-MM')",
+                query
+            )
+            if 'INSERT OR IGNORE' in query:
+                query = query.replace('INSERT OR IGNORE', 'INSERT')
+                if 'ON CONFLICT' not in query:
+                    query = query.rstrip(';') + ' ON CONFLICT DO NOTHING'
+            return query
+        
+        def fetchone(self):
+            return self._cursor.fetchone()
+        
+        def fetchall(self):
+            return self._cursor.fetchall()
+        
+        def __iter__(self):
+            return iter(self._cursor.fetchall())
+        
+        @property
+        def lastrowid(self):
+            self._cursor.execute('SELECT lastval() as id')
+            row = self._cursor.fetchone()
+            return row['id'] if row else None
+        
+        @property
+        def rowcount(self):
+            return self._cursor.rowcount
+        
+        def close(self):
+            self._cursor.close()
+    
+    
+    class PostgresConnection:
+        def __init__(self, conn):
+            self._conn = conn
+        
+        def execute(self, query, params=None):
+            cursor = PostgresCursor(self._conn)
+            return cursor.execute(query, params)
+        
+        def cursor(self):
+            return PostgresCursor(self._conn)
+        
+        def commit(self):
+            self._conn.commit()
+        
+        def rollback(self):
+            self._conn.rollback()
+        
+        def close(self):
+            try:
+                _get_pg_pool().putconn(self._conn)
+            except:
+                self._conn.close()
+        
+        def __enter__(self):
+            return self
+        
+        def __exit__(self, *args):
+            self.close()
+    
+    
+    def get_db():
+        conn = _get_pg_pool().getconn()
+        return PostgresConnection(conn)
+
+# ============================================================
+# ===== SQLite Support =====
+# ============================================================
+else:
+    def get_db():
+        os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
+        conn.row_factory = sqlite3.Row
+        conn.execute('PRAGMA journal_mode=WAL')
+        conn.execute('PRAGMA synchronous=NORMAL')
+        conn.execute('PRAGMA cache_size=10000')
+        conn.execute('PRAGMA busy_timeout=30000')
+        return conn
+
+
+# ============================================================
+# ===== Password Functions =====
+# ============================================================
 def hash_password(password):
-    """تشفير كلمة المرور باستخدام bcrypt (آمن)"""
     if isinstance(password, str):
         password = password.encode('utf-8')
     return bcrypt.hashpw(password, bcrypt.gensalt(rounds=12)).decode('utf-8')
 
 
 def verify_password(password, hashed):
-    """التحقق من كلمة المرور - يدعم bcrypt و SHA-256 (للتوافق مع القديم)"""
     if not hashed:
         return False
-
-    # bcrypt (الصيغة الحديثة)
     if hashed.startswith('$2b$') or hashed.startswith('$2a$') or hashed.startswith('$2y$'):
         try:
             return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
@@ -47,15 +173,16 @@ def verify_password(password, hashed):
             print(f"❌ خطأ في bcrypt: {e}")
             return False
     else:
-        # SHA-256 (الصيغة القديمة - للتوافق فقط)
         return hashlib.sha256(password.encode()).hexdigest() == hashed
 
 
+# ============================================================
+# ===== Permissions =====
+# ============================================================
 def get_user_permissions(user_id):
-    """جلب جميع صلاحيات المستخدم (من دوره + صلاحياته الخاصة)"""
     conn = get_db()
     cursor = conn.cursor()
-
+    
     cursor.execute("""
         SELECT DISTINCT p.name
         FROM permissions p
@@ -64,462 +191,228 @@ def get_user_permissions(user_id):
         JOIN users u ON u.role = r.name
         WHERE u.id = ?
     """, (user_id,))
-
-    permissions = {row[0] for row in cursor.fetchall()}
-
+    
+    permissions = set()
+    for row in cursor.fetchall():
+        if isinstance(row, dict):
+            permissions.add(row['name'])
+        else:
+            permissions.add(row[0])
+    
     cursor.execute("""
         SELECT p.name
         FROM permissions p
         JOIN user_permissions up ON p.id = up.permission_id
         WHERE up.user_id = ?
     """, (user_id,))
-
+    
     for row in cursor.fetchall():
-        permissions.add(row[0])
-
+        if isinstance(row, dict):
+            permissions.add(row['name'])
+        else:
+            permissions.add(row[0])
+    
     conn.close()
     return permissions
 
 
 def has_permission(user_id, permission_name):
-    """التحقق من وجود صلاحية معينة للمستخدم"""
-    permissions = get_user_permissions(user_id)
-    return permission_name in permissions
+    return permission_name in get_user_permissions(user_id)
 
 
 def add_permission_to_user(user_id, permission_name):
-    """إضافة صلاحية معينة للمستخدم"""
     conn = get_db()
     cursor = conn.cursor()
-
     cursor.execute("SELECT id FROM permissions WHERE name = ?", (permission_name,))
     perm = cursor.fetchone()
     if perm:
-        cursor.execute("""
-            INSERT OR IGNORE INTO user_permissions (user_id, permission_id)
-            VALUES (?, ?)
-        """, (user_id, perm[0]))
-        conn.commit()
-
+        perm_id = perm['id'] if isinstance(perm, dict) else perm[0]
+        try:
+            if USE_POSTGRES:
+                cursor.execute("""
+                    INSERT INTO user_permissions (user_id, permission_id)
+                    VALUES (%s, %s)
+                    ON CONFLICT (user_id, permission_id) DO NOTHING
+                """, (user_id, perm_id))
+            else:
+                cursor.execute("""
+                    INSERT OR IGNORE INTO user_permissions (user_id, permission_id)
+                    VALUES (?, ?)
+                """, (user_id, perm_id))
+            conn.commit()
+        except Exception as e:
+            print(f"⚠️ {e}")
     conn.close()
 
 
 def remove_permission_from_user(user_id, permission_name):
-    """إزالة صلاحية معينة من المستخدم"""
     conn = get_db()
     cursor = conn.cursor()
-
     cursor.execute("SELECT id FROM permissions WHERE name = ?", (permission_name,))
     perm = cursor.fetchone()
     if perm:
+        perm_id = perm['id'] if isinstance(perm, dict) else perm[0]
         cursor.execute("""
             DELETE FROM user_permissions
             WHERE user_id = ? AND permission_id = ?
-        """, (user_id, perm[0]))
+        """, (user_id, perm_id))
         conn.commit()
-
     conn.close()
 
 
+# ============================================================
+# ===== Init DB =====
+# ============================================================
 def init_db():
+    if USE_POSTGRES:
+        _init_postgres()
+    else:
+        _init_sqlite()
+
+
+def _init_postgres():
+    """تهيئة PostgreSQL"""
     conn = get_db()
     cursor = conn.cursor()
-
-    # ===== جميع الجداول =====
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS company_settings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            name_en TEXT,
-            phone TEXT,
-            address TEXT,
-            logo_path TEXT,
-            favicon_path TEXT,
-            email TEXT,
-            website TEXT,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            name TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            role TEXT CHECK(role IN ('مدير', 'موظف', 'مراقب')) NOT NULL,
-            is_active INTEGER DEFAULT 1,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS trainers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            phone TEXT,
-            email TEXT,
-            specialty TEXT,
-            notes TEXT,
-            is_active INTEGER DEFAULT 1,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS clients (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            phone TEXT,
-            email TEXT,
-            address TEXT,
-            company_name TEXT,
-            notes TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS client_trainers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            client_id INTEGER NOT NULL,
-            trainer_id INTEGER NOT NULL,
-            FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
-            FOREIGN KEY (trainer_id) REFERENCES trainers(id) ON DELETE CASCADE,
-            UNIQUE(client_id, trainer_id)
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            client_id INTEGER NOT NULL,
-            created_by INTEGER,
-            assigned_user_id INTEGER,
-            trainer_id INTEGER,
-            title TEXT NOT NULL,
-            description TEXT,
-            status TEXT CHECK(status IN ('لم تبدأ', 'قيد التنفيذ', 'مراجعة', 'مكتملة', 'متأخرة')) DEFAULT 'لم تبدأ',
-            priority TEXT CHECK(priority IN ('منخفضة', 'متوسطة', 'عالية')) DEFAULT 'متوسطة',
-            due_date DATE NOT NULL,
-            completion_percentage INTEGER DEFAULT 0,
-            task_group TEXT,
-            meeting_id INTEGER,
-            estimated_duration INTEGER DEFAULT 0,
-            actual_duration INTEGER DEFAULT 0,
-            contract_payment_id INTEGER,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (client_id) REFERENCES clients(id),
-            FOREIGN KEY (created_by) REFERENCES users(id),
-            FOREIGN KEY (assigned_user_id) REFERENCES users(id),
-            FOREIGN KEY (trainer_id) REFERENCES trainers(id),
-            FOREIGN KEY (meeting_id) REFERENCES meetings(id),
-            FOREIGN KEY (contract_payment_id) REFERENCES contract_payments(id)
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS task_updates (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            task_id INTEGER NOT NULL,
-            user_id INTEGER NOT NULL,
-            note TEXT,
-            attachment_path TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (task_id) REFERENCES tasks(id),
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS notifications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            task_id INTEGER,
-            message TEXT NOT NULL,
-            is_read INTEGER DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id),
-            FOREIGN KEY (task_id) REFERENCES tasks(id)
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS activity_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            action TEXT NOT NULL,
-            details TEXT,
-            ip_address TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS meetings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            client_id INTEGER NOT NULL,
-            title TEXT NOT NULL,
-            description TEXT,
-            meeting_date DATETIME NOT NULL,
-            duration INTEGER DEFAULT 60,
-            location TEXT,
-            meeting_link TEXT,
-            status TEXT CHECK(status IN ('مجدول', 'تم', 'ملغي')) DEFAULT 'مجدول',
-            reminder_sent INTEGER DEFAULT 0,
-            created_by INTEGER NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (client_id) REFERENCES clients(id),
-            FOREIGN KEY (created_by) REFERENCES users(id)
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS meeting_reminders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            meeting_id INTEGER NOT NULL,
-            reminder_time DATETIME NOT NULL,
-            sent INTEGER DEFAULT 0,
-            FOREIGN KEY (meeting_id) REFERENCES meetings(id)
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS module_types (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            description TEXT,
-            price REAL DEFAULT 0,
-            is_active INTEGER DEFAULT 1,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS contract_modules (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            contract_id INTEGER NOT NULL,
-            module_type_id INTEGER NOT NULL,
-            quantity INTEGER DEFAULT 1,
-            price REAL DEFAULT 0,
-            notes TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (contract_id) REFERENCES client_contracts(id) ON DELETE CASCADE,
-            FOREIGN KEY (module_type_id) REFERENCES module_types(id)
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS client_modules (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            client_id INTEGER,
-            name TEXT NOT NULL,
-            description TEXT,
-            price REAL DEFAULT 0,
-            status TEXT CHECK(status IN ('نشط', 'قيد التطوير', 'مكتمل', 'متوقف')) DEFAULT 'نشط',
-            start_date DATE,
-            end_date DATE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (client_id) REFERENCES clients(id)
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS client_payments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            client_id INTEGER NOT NULL,
-            module_id INTEGER,
-            amount REAL NOT NULL,
-            payment_date DATE NOT NULL,
-            due_date DATE,
-            payment_method TEXT CHECK(payment_method IN ('نقدي', 'تحويل بنكي', 'شيك', 'بطاقة ائتمان', 'أخرى')) DEFAULT 'نقدي',
-            status TEXT CHECK(status IN ('مدفوع', 'معلق', 'متأخر')) DEFAULT 'معلق',
-            invoice_number TEXT,
-            notes TEXT,
-            created_by INTEGER NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (client_id) REFERENCES clients(id),
-            FOREIGN KEY (module_id) REFERENCES client_modules(id),
-            FOREIGN KEY (created_by) REFERENCES users(id)
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS payment_installments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            payment_id INTEGER NOT NULL,
-            installment_number INTEGER NOT NULL,
-            amount REAL NOT NULL,
-            due_date DATE NOT NULL,
-            status TEXT CHECK(status IN ('مستحق', 'مدفوع', 'متأخر')) DEFAULT 'مستحق',
-            paid_date DATE,
-            notes TEXT,
-            FOREIGN KEY (payment_id) REFERENCES client_payments(id)
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS login_attempts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL,
-            ip_address TEXT,
-            attempt_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            success INTEGER DEFAULT 0
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS contract_types (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            description TEXT,
-            is_active INTEGER DEFAULT 1,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS client_contracts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            client_id INTEGER NOT NULL,
-            contract_type_id INTEGER,
-            contract_number TEXT UNIQUE NOT NULL,
-            title TEXT NOT NULL,
-            description TEXT,
-            start_date DATE NOT NULL,
-            end_date DATE NOT NULL,
-            contract_value REAL DEFAULT 0,
-            total_amount REAL DEFAULT 0,
-            paid_amount REAL DEFAULT 0,
-            payment_status TEXT CHECK(payment_status IN ('غير مدفوع', 'مدفوع جزئيا', 'مدفوع بالكامل')) DEFAULT 'غير مدفوع',
-            status TEXT CHECK(status IN ('نشط', 'منتهي', 'ملغي', 'معلق')) DEFAULT 'نشط',
-            file_path TEXT,
-            notes TEXT,
-            created_by INTEGER NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
-            FOREIGN KEY (contract_type_id) REFERENCES contract_types(id),
-            FOREIGN KEY (created_by) REFERENCES users(id)
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS contract_payments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            contract_id INTEGER NOT NULL,
-            installment_number INTEGER NOT NULL,
-            amount REAL NOT NULL,
-            paid_amount REAL DEFAULT 0,
-            due_date DATE NOT NULL,
-            payment_date DATE,
-            status TEXT CHECK(status IN ('مستحقة', 'مدفوعة', 'مدفوعة جزئيا', 'متأخرة')) DEFAULT 'مستحقة',
-            notes TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (contract_id) REFERENCES client_contracts(id) ON DELETE CASCADE
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS contract_attachments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            contract_id INTEGER NOT NULL,
-            file_name TEXT NOT NULL,
-            file_path TEXT NOT NULL,
-            file_size INTEGER DEFAULT 0,
-            file_type TEXT,
-            uploaded_by INTEGER NOT NULL,
-            description TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (contract_id) REFERENCES client_contracts(id) ON DELETE CASCADE,
-            FOREIGN KEY (uploaded_by) REFERENCES users(id)
-        )
-    """)
-
-    # ===== جدول الصلاحيات =====
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS permissions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL,
-            resource TEXT NOT NULL,
-            action TEXT NOT NULL,
-            description TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS roles (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL,
-            description TEXT,
-            is_default INTEGER DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS role_permissions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            role_id INTEGER NOT NULL,
-            permission_id INTEGER NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
-            FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE,
-            UNIQUE(role_id, permission_id)
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS user_permissions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            permission_id INTEGER NOT NULL,
-            granted_by INTEGER,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE,
-            FOREIGN KEY (granted_by) REFERENCES users(id),
-            UNIQUE(user_id, permission_id)
-        )
-    """)
-
-    # ===== ترقية جدول tasks =====
-    try:
-        cursor.execute("ALTER TABLE tasks ADD COLUMN created_by INTEGER")
-        print("✅ تم إضافة عمود created_by")
-    except sqlite3.OperationalError:
-        print("ℹ️ عمود created_by موجود مسبقاً")
-
-    try:
-        cursor.execute("ALTER TABLE tasks ADD COLUMN assigned_user_id INTEGER")
-        print("✅ تم إضافة عمود assigned_user_id")
-    except sqlite3.OperationalError:
-        print("ℹ️ عمود assigned_user_id موجود مسبقاً")
-
-    try:
-        cursor.execute("ALTER TABLE tasks RENAME COLUMN assigned_to TO trainer_id")
-        print("✅ تم تغيير اسم العمود إلى trainer_id")
-    except sqlite3.OperationalError:
-        print("ℹ️ عمود trainer_id موجود مسبقاً")
-
-    try:
-        cursor.execute("ALTER TABLE tasks ADD COLUMN contract_payment_id INTEGER")
-        print("✅ تم إضافة عمود contract_payment_id إلى جدول tasks")
-    except sqlite3.OperationalError:
-        print("ℹ️ عمود contract_payment_id موجود مسبقاً")
-
-    try:
-        cursor.execute("ALTER TABLE company_settings ADD COLUMN favicon_path TEXT")
-        print("✅ تم إضافة عمود favicon_path")
-    except sqlite3.OperationalError:
-        print("ℹ️ عمود favicon_path موجود مسبقاً")
-
-    # ===== الصلاحيات الافتراضية =====
+    
+    # الحصول على cursor حقيقي للتعامل مع PostgreSQL
+    if USE_POSTGRES:
+        real_cursor = conn._conn.cursor()
+    else:
+        real_cursor = cursor._cursor
+    
+    tables = [
+        """CREATE TABLE IF NOT EXISTS company_settings (
+            id SERIAL PRIMARY KEY, name TEXT NOT NULL, name_en TEXT,
+            phone TEXT, address TEXT, logo_path TEXT, favicon_path TEXT,
+            email TEXT, website TEXT, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
+        """CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY, username TEXT UNIQUE NOT NULL, name TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL, password TEXT NOT NULL,
+            role TEXT CHECK(role IN ('مدير','موظف','مراقب')) NOT NULL,
+            is_active INTEGER DEFAULT 1, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
+        """CREATE TABLE IF NOT EXISTS trainers (
+            id SERIAL PRIMARY KEY, name TEXT NOT NULL, phone TEXT, email TEXT,
+            specialty TEXT, notes TEXT, is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
+        """CREATE TABLE IF NOT EXISTS clients (
+            id SERIAL PRIMARY KEY, name TEXT NOT NULL, phone TEXT, email TEXT,
+            address TEXT, company_name TEXT, notes TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
+        """CREATE TABLE IF NOT EXISTS client_trainers (
+            id SERIAL PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+            trainer_id INTEGER NOT NULL REFERENCES trainers(id) ON DELETE CASCADE,
+            UNIQUE(client_id, trainer_id))""",
+        """CREATE TABLE IF NOT EXISTS contract_types (
+            id SERIAL PRIMARY KEY, name TEXT NOT NULL, description TEXT,
+            is_active INTEGER DEFAULT 1, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
+        """CREATE TABLE IF NOT EXISTS client_contracts (
+            id SERIAL PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+            contract_type_id INTEGER REFERENCES contract_types(id),
+            contract_number TEXT UNIQUE NOT NULL, title TEXT NOT NULL, description TEXT,
+            start_date DATE NOT NULL, end_date DATE NOT NULL,
+            contract_value REAL DEFAULT 0, total_amount REAL DEFAULT 0, paid_amount REAL DEFAULT 0,
+            payment_status TEXT DEFAULT 'غير مدفوع', status TEXT DEFAULT 'نشط',
+            file_path TEXT, notes TEXT, created_by INTEGER NOT NULL REFERENCES users(id),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
+        """CREATE TABLE IF NOT EXISTS contract_payments (
+            id SERIAL PRIMARY KEY, contract_id INTEGER NOT NULL REFERENCES client_contracts(id) ON DELETE CASCADE,
+            installment_number INTEGER NOT NULL, amount REAL NOT NULL, paid_amount REAL DEFAULT 0,
+            due_date DATE NOT NULL, payment_date DATE, status TEXT DEFAULT 'مستحقة',
+            notes TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
+        """CREATE TABLE IF NOT EXISTS contract_attachments (
+            id SERIAL PRIMARY KEY, contract_id INTEGER NOT NULL REFERENCES client_contracts(id) ON DELETE CASCADE,
+            file_name TEXT NOT NULL, file_path TEXT NOT NULL, file_size INTEGER DEFAULT 0,
+            file_type TEXT, uploaded_by INTEGER NOT NULL REFERENCES users(id),
+            description TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
+        """CREATE TABLE IF NOT EXISTS module_types (
+            id SERIAL PRIMARY KEY, name TEXT NOT NULL, description TEXT,
+            price REAL DEFAULT 0, is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
+        """CREATE TABLE IF NOT EXISTS client_modules (
+            id SERIAL PRIMARY KEY, client_id INTEGER REFERENCES clients(id),
+            name TEXT NOT NULL, description TEXT, price REAL DEFAULT 0,
+            status TEXT DEFAULT 'نشط', start_date DATE, end_date DATE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
+        """CREATE TABLE IF NOT EXISTS contract_modules (
+            id SERIAL PRIMARY KEY, contract_id INTEGER NOT NULL REFERENCES client_contracts(id) ON DELETE CASCADE,
+            module_type_id INTEGER NOT NULL REFERENCES module_types(id),
+            quantity INTEGER DEFAULT 1, price REAL DEFAULT 0, notes TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
+        """CREATE TABLE IF NOT EXISTS client_payments (
+            id SERIAL PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id),
+            module_id INTEGER REFERENCES client_modules(id),
+            amount REAL NOT NULL, payment_date DATE NOT NULL, due_date DATE,
+            payment_method TEXT DEFAULT 'نقدي', status TEXT DEFAULT 'معلق',
+            invoice_number TEXT, notes TEXT, created_by INTEGER NOT NULL REFERENCES users(id),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
+        """CREATE TABLE IF NOT EXISTS payment_installments (
+            id SERIAL PRIMARY KEY, payment_id INTEGER NOT NULL REFERENCES client_payments(id),
+            installment_number INTEGER NOT NULL, amount REAL NOT NULL, due_date DATE NOT NULL,
+            status TEXT DEFAULT 'مستحق', paid_date DATE, notes TEXT)""",
+        """CREATE TABLE IF NOT EXISTS meetings (
+            id SERIAL PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id),
+            title TEXT NOT NULL, description TEXT, meeting_date TIMESTAMP NOT NULL,
+            duration INTEGER DEFAULT 60, location TEXT, meeting_link TEXT,
+            status TEXT DEFAULT 'مجدول', reminder_sent INTEGER DEFAULT 0,
+            created_by INTEGER NOT NULL REFERENCES users(id),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
+        """CREATE TABLE IF NOT EXISTS meeting_reminders (
+            id SERIAL PRIMARY KEY, meeting_id INTEGER NOT NULL REFERENCES meetings(id),
+            reminder_time TIMESTAMP NOT NULL, sent INTEGER DEFAULT 0)""",
+        """CREATE TABLE IF NOT EXISTS tasks (
+            id SERIAL PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id),
+            created_by INTEGER REFERENCES users(id), assigned_user_id INTEGER REFERENCES users(id),
+            trainer_id INTEGER REFERENCES trainers(id), title TEXT NOT NULL, description TEXT,
+            status TEXT DEFAULT 'لم تبدأ', priority TEXT DEFAULT 'متوسطة',
+            due_date DATE NOT NULL, completion_percentage INTEGER DEFAULT 0,
+            task_group TEXT, meeting_id INTEGER REFERENCES meetings(id),
+            estimated_duration INTEGER DEFAULT 0, actual_duration INTEGER DEFAULT 0,
+            contract_payment_id INTEGER REFERENCES contract_payments(id),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
+        """CREATE TABLE IF NOT EXISTS task_updates (
+            id SERIAL PRIMARY KEY, task_id INTEGER NOT NULL REFERENCES tasks(id),
+            user_id INTEGER NOT NULL REFERENCES users(id), note TEXT, attachment_path TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
+        """CREATE TABLE IF NOT EXISTS notifications (
+            id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id),
+            task_id INTEGER REFERENCES tasks(id), message TEXT NOT NULL,
+            is_read INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
+        """CREATE TABLE IF NOT EXISTS activity_log (
+            id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id),
+            action TEXT NOT NULL, details TEXT, ip_address TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
+        """CREATE TABLE IF NOT EXISTS login_attempts (
+            id SERIAL PRIMARY KEY, username TEXT NOT NULL, ip_address TEXT,
+            attempt_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP, success INTEGER DEFAULT 0)""",
+        """CREATE TABLE IF NOT EXISTS permissions (
+            id SERIAL PRIMARY KEY, name TEXT UNIQUE NOT NULL, resource TEXT NOT NULL,
+            action TEXT NOT NULL, description TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
+        """CREATE TABLE IF NOT EXISTS roles (
+            id SERIAL PRIMARY KEY, name TEXT UNIQUE NOT NULL, description TEXT,
+            is_default INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""",
+        """CREATE TABLE IF NOT EXISTS role_permissions (
+            id SERIAL PRIMARY KEY, role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+            permission_id INTEGER NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE(role_id, permission_id))""",
+        """CREATE TABLE IF NOT EXISTS user_permissions (
+            id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            permission_id INTEGER NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+            granted_by INTEGER REFERENCES users(id),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE(user_id, permission_id))""",
+    ]
+    
+    for table_sql in tables:
+        try:
+            real_cursor.execute(table_sql)
+        except Exception as e:
+            print(f"⚠️ جدول: {e}")
+    
+    conn.commit()
+    
+    # الصلاحيات
     default_permissions = [
         ('tasks.view', 'tasks', 'view', 'عرض المهام'),
         ('tasks.create', 'tasks', 'create', 'إنشاء مهام'),
@@ -543,143 +436,236 @@ def init_db():
         ('users.edit', 'users', 'edit', 'تعديل المستخدمين'),
         ('users.delete', 'users', 'delete', 'حذف المستخدمين'),
     ]
-
-    for perm_name, resource, action, description in default_permissions:
-        cursor.execute("""
-            INSERT OR IGNORE INTO permissions (name, resource, action, description)
-            VALUES (?, ?, ?, ?)
-        """, (perm_name, resource, action, description))
-
-    # ===== الأدوار الافتراضية =====
-    default_roles = [
-        ('مدير', 'مدير النظام - لديه جميع الصلاحيات', 0),
-        ('موظف', 'موظف عادي - صلاحيات محدودة', 1),
-        ('مراقب', 'مشاهد - صلاحيات عرض فقط', 0),
-    ]
-
-    for role_name, description, is_default in default_roles:
-        cursor.execute("""
-            INSERT OR IGNORE INTO roles (name, description, is_default)
-            VALUES (?, ?, ?)
-        """, (role_name, description, is_default))
-
-    # ===== ربط الأدوار بالصلاحيات =====
-    roles_map = {}
-    cursor.execute("SELECT id, name FROM roles")
-    for row in cursor.fetchall():
-        roles_map[row[1]] = row[0]
-
-    perms_map = {}
-    cursor.execute("SELECT id, name FROM permissions")
-    for row in cursor.fetchall():
-        perms_map[row[1]] = row[0]
-
-    # صلاحيات المدير
-    if 'مدير' in roles_map:
-        for perm_id in perms_map.values():
-            cursor.execute("""
-                INSERT OR IGNORE INTO role_permissions (role_id, permission_id)
-                VALUES (?, ?)
-            """, (roles_map['مدير'], perm_id))
-
-    # صلاحيات الموظف
-    if 'موظف' in roles_map:
-        employee_perms = [
-            'tasks.view', 'tasks.create', 'tasks.edit', 'tasks.assign',
-            'clients.view', 'clients.create', 'clients.edit',
-            'contracts.view', 'contracts.create',
-            'payments.view', 'payments.create',
-            'reports.view'
-        ]
-        for perm_name in employee_perms:
-            if perm_name in perms_map:
-                cursor.execute("""
-                    INSERT OR IGNORE INTO role_permissions (role_id, permission_id)
-                    VALUES (?, ?)
-                """, (roles_map['موظف'], perms_map[perm_name]))
-
-    # صلاحيات المراقب
-    if 'مراقب' in roles_map:
-        viewer_perms = [
-            'tasks.view', 'clients.view', 'contracts.view',
-            'payments.view', 'reports.view', 'users.view'
-        ]
-        for perm_name in viewer_perms:
-            if perm_name in perms_map:
-                cursor.execute("""
-                    INSERT OR IGNORE INTO role_permissions (role_id, permission_id)
-                    VALUES (?, ?)
-                """, (roles_map['مراقب'], perms_map[perm_name]))
-
-    # ===== البيانات الافتراضية =====
-    cursor.execute("SELECT * FROM company_settings")
-    if not cursor.fetchone():
-        cursor.execute("""
-            INSERT INTO company_settings (name, name_en, phone, address, email, website)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, ('NQ', 'NQ Company', '+966 50 123 4567', 'الرياض، المملكة العربية السعودية', 'info@NQ.com', 'www.NQ.com'))
-
-    cursor.execute("SELECT * FROM users WHERE username = 'Adminerp'")
-    if not cursor.fetchone():
-        cursor.execute("""
-            INSERT INTO users (username, name, email, password, role)
-            VALUES (?, ?, ?, ?, ?)
-        """, ('Adminerp', 'مدير النظام', 'adminerp@company.com', hash_password('1234'), 'مدير'))
-
-    cursor.execute("SELECT * FROM users WHERE username = 'Fahd01'")
-    if not cursor.fetchone():
-        cursor.execute("""
-            INSERT INTO users (username, name, email, password, role)
-            VALUES (?, ?, ?, ?, ?)
-        """, ('Fahd01', 'فهد المدير', 'fahd@company.com', hash_password('1234'), 'مدير'))
-
-    cursor.execute("SELECT * FROM users WHERE username = 'employee1'")
-    if not cursor.fetchone():
-        cursor.execute("""
-            INSERT INTO users (username, name, email, password, role)
-            VALUES 
-            ('employee1', 'سارة موظف', 'sara@company.com', ?, 'موظف'),
-            ('viewer1', 'خالد مراقب', 'khalid@company.com', ?, 'مراقب')
-        """, (hash_password('1234'), hash_password('1234')))
-
-    # ===== المدربين الافتراضيين =====
-    cursor.execute("SELECT COUNT(*) as count FROM trainers")
-    if cursor.fetchone()[0] == 0:
-        cursor.execute("""
-            INSERT INTO trainers (name, phone, email, specialty, notes, is_active)
-            VALUES 
-            ('أحمد سليمان', '0551234567', 'ahmed@trainer.com', 'تدريب تقني', 'مدرب معتمد', 1),
-            ('نورة القحطاني', '0552345678', 'noura@trainer.com', 'مهارات قيادية', 'مدربة معتمدة', 1),
-            ('خالد المالكي', '0553456789', 'khalid@trainer.com', 'تطوير برمجيات', 'متخصص في التطوير', 1)
-        """)
-
-    # ===== أنواع العقود الافتراضية =====
-    cursor.execute("SELECT COUNT(*) as count FROM contract_types")
-    if cursor.fetchone()[0] == 0:
-        cursor.execute("""
-            INSERT INTO contract_types (name, description)
-            VALUES 
-            ('عقد خدمات', 'عقد تقديم خدمات استشارية أو تقنية'),
-            ('عقد مقاولات', 'عقد أعمال مقاولات وإنشاءات'),
-            ('عقد توريد', 'عقد توريد مواد أو معدات'),
-            ('عقد تدريب', 'عقد تقديم دورات تدريبية')
-        """)
-
-    # ===== أنواع المديولات الافتراضية =====
-    cursor.execute("SELECT COUNT(*) as count FROM module_types")
-    if cursor.fetchone()[0] == 0:
-        cursor.execute("""
-            INSERT INTO module_types (name, description, price)
-            VALUES 
-            ('نظام إدارة الموارد البشرية', 'نظام متكامل لإدارة الموظفين والرواتب', 15000),
-            ('نظام المحاسبة', 'نظام محاسبي متكامل مع التقارير المالية', 20000),
-            ('نظام إدارة العملاء CRM', 'نظام لإدارة علاقات العملاء والمبيعات', 12000),
-            ('نظام إدارة المشاريع', 'نظام لتخطيط ومتابعة المشاريع', 18000),
-            ('نظام نقاط البيع POS', 'نظام نقاط بيع متكامل مع المخزون', 10000)
-        """)
-
+    
+    for perm in default_permissions:
+        try:
+            real_cursor.execute("""
+                INSERT INTO permissions (name, resource, action, description)
+                VALUES (%s, %s, %s, %s) ON CONFLICT (name) DO NOTHING
+            """, perm)
+        except:
+            pass
+    
     conn.commit()
-    print(f"✅ تم تهيئة قاعدة البيانات في: {DB_PATH}")
+    
+    default_roles = [
+        ('مدير', 'مدير النظام', 0),
+        ('موظف', 'موظف عادي', 1),
+        ('مراقب', 'مشاهد', 0),
+    ]
+    
+    for role in default_roles:
+        try:
+            real_cursor.execute("""
+                INSERT INTO roles (name, description, is_default)
+                VALUES (%s, %s, %s) ON CONFLICT (name) DO NOTHING
+            """, role)
+        except:
+            pass
+    
+    conn.commit()
+    
+    # ربط الأدوار
+    real_cursor.execute("SELECT id, name FROM roles")
+    roles_map = {r[1]: r[0] for r in real_cursor.fetchall()}
+    real_cursor.execute("SELECT id, name FROM permissions")
+    perms_map = {p[1]: p[0] for p in real_cursor.fetchall()}
+    
+    if 'مدير' in roles_map:
+        for pid in perms_map.values():
+            try:
+                real_cursor.execute("""
+                    INSERT INTO role_permissions (role_id, permission_id)
+                    VALUES (%s, %s) ON CONFLICT DO NOTHING
+                """, (roles_map['مدير'], pid))
+            except:
+                pass
+    
+    employee_perms = ['tasks.view', 'tasks.create', 'tasks.edit', 'tasks.assign',
+        'clients.view', 'clients.create', 'clients.edit',
+        'contracts.view', 'contracts.create', 'payments.view', 'payments.create', 'reports.view']
+    if 'موظف' in roles_map:
+        for pn in employee_perms:
+            if pn in perms_map:
+                try:
+                    real_cursor.execute("""
+                        INSERT INTO role_permissions (role_id, permission_id)
+                        VALUES (%s, %s) ON CONFLICT DO NOTHING
+                    """, (roles_map['موظف'], perms_map[pn]))
+                except:
+                    pass
+    
+    viewer_perms = ['tasks.view', 'clients.view', 'contracts.view',
+        'payments.view', 'reports.view', 'users.view']
+    if 'مراقب' in roles_map:
+        for pn in viewer_perms:
+            if pn in perms_map:
+                try:
+                    real_cursor.execute("""
+                        INSERT INTO role_permissions (role_id, permission_id)
+                        VALUES (%s, %s) ON CONFLICT DO NOTHING
+                    """, (roles_map['مراقب'], perms_map[pn]))
+                except:
+                    pass
+    
+    conn.commit()
+    
+    # البيانات الافتراضية
+    real_cursor.execute("SELECT * FROM company_settings LIMIT 1")
+    if not real_cursor.fetchone():
+        real_cursor.execute("""
+            INSERT INTO company_settings (name, name_en, phone, address, email, website)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, ('NQ', 'NQ Company', '+966 50 123 4567', 'الرياض', 'info@NQ.com', 'www.NQ.com'))
+    
+    for uname, nname, em, rl in [
+        ('Adminerp', 'مدير النظام', 'adminerp@company.com', 'مدير'),
+        ('Fahd01', 'فهد المدير', 'fahd@company.com', 'مدير'),
+        ('employee1', 'سارة موظف', 'sara@company.com', 'موظف'),
+        ('viewer1', 'خالد مراقب', 'khalid@company.com', 'مراقب'),
+    ]:
+        real_cursor.execute("SELECT * FROM users WHERE username = %s", (uname,))
+        if not real_cursor.fetchone():
+            real_cursor.execute("""
+                INSERT INTO users (username, name, email, password, role)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (uname, nname, em, hash_password('1234'), rl))
+    
+    conn.commit()
+    conn.close()
+    print("✅ PostgreSQL initialized")
+
+
+def _init_sqlite():
+    """تهيئة SQLite"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # نفس الكود القديم
+    cursor.execute("""CREATE TABLE IF NOT EXISTS company_settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, name_en TEXT,
+        phone TEXT, address TEXT, logo_path TEXT, favicon_path TEXT,
+        email TEXT, website TEXT, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, password TEXT NOT NULL,
+        role TEXT CHECK(role IN ('مدير','موظف','مراقب')) NOT NULL,
+        is_active INTEGER DEFAULT 1, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS trainers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, phone TEXT, email TEXT,
+        specialty TEXT, notes TEXT, is_active INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS clients (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, phone TEXT, email TEXT,
+        address TEXT, company_name TEXT, notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS client_trainers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, client_id INTEGER NOT NULL,
+        trainer_id INTEGER NOT NULL, UNIQUE(client_id, trainer_id),
+        FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
+        FOREIGN KEY (trainer_id) REFERENCES trainers(id) ON DELETE CASCADE)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, client_id INTEGER NOT NULL,
+        created_by INTEGER, assigned_user_id INTEGER, trainer_id INTEGER,
+        title TEXT NOT NULL, description TEXT, status TEXT DEFAULT 'لم تبدأ',
+        priority TEXT DEFAULT 'متوسطة', due_date DATE NOT NULL,
+        completion_percentage INTEGER DEFAULT 0, task_group TEXT, meeting_id INTEGER,
+        estimated_duration INTEGER DEFAULT 0, actual_duration INTEGER DEFAULT 0,
+        contract_payment_id INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS task_updates (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, task_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL, note TEXT, attachment_path TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL,
+        task_id INTEGER, message TEXT NOT NULL, is_read INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS activity_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL,
+        action TEXT NOT NULL, details TEXT, ip_address TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS meetings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, client_id INTEGER NOT NULL,
+        title TEXT NOT NULL, description TEXT, meeting_date DATETIME NOT NULL,
+        duration INTEGER DEFAULT 60, location TEXT, meeting_link TEXT,
+        status TEXT DEFAULT 'مجدول', reminder_sent INTEGER DEFAULT 0,
+        created_by INTEGER NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS meeting_reminders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, meeting_id INTEGER NOT NULL,
+        reminder_time DATETIME NOT NULL, sent INTEGER DEFAULT 0)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS module_types (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, description TEXT,
+        price REAL DEFAULT 0, is_active INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS contract_modules (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, contract_id INTEGER NOT NULL,
+        module_type_id INTEGER NOT NULL, quantity INTEGER DEFAULT 1,
+        price REAL DEFAULT 0, notes TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS client_modules (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, client_id INTEGER, name TEXT NOT NULL,
+        description TEXT, price REAL DEFAULT 0, status TEXT DEFAULT 'نشط',
+        start_date DATE, end_date DATE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS client_payments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, client_id INTEGER NOT NULL,
+        module_id INTEGER, amount REAL NOT NULL, payment_date DATE NOT NULL,
+        due_date DATE, payment_method TEXT DEFAULT 'نقدي', status TEXT DEFAULT 'معلق',
+        invoice_number TEXT, notes TEXT, created_by INTEGER NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS payment_installments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, payment_id INTEGER NOT NULL,
+        installment_number INTEGER NOT NULL, amount REAL NOT NULL,
+        due_date DATE NOT NULL, status TEXT DEFAULT 'مستحق', paid_date DATE, notes TEXT)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS login_attempts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL,
+        ip_address TEXT, attempt_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        success INTEGER DEFAULT 0)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS contract_types (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, description TEXT,
+        is_active INTEGER DEFAULT 1, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS client_contracts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, client_id INTEGER NOT NULL,
+        contract_type_id INTEGER, contract_number TEXT UNIQUE NOT NULL,
+        title TEXT NOT NULL, description TEXT, start_date DATE NOT NULL,
+        end_date DATE NOT NULL, contract_value REAL DEFAULT 0,
+        total_amount REAL DEFAULT 0, paid_amount REAL DEFAULT 0,
+        payment_status TEXT DEFAULT 'غير مدفوع', status TEXT DEFAULT 'نشط',
+        file_path TEXT, notes TEXT, created_by INTEGER NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS contract_payments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, contract_id INTEGER NOT NULL,
+        installment_number INTEGER NOT NULL, amount REAL NOT NULL,
+        paid_amount REAL DEFAULT 0, due_date DATE NOT NULL, payment_date DATE,
+        status TEXT DEFAULT 'مستحقة', notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS contract_attachments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, contract_id INTEGER NOT NULL,
+        file_name TEXT NOT NULL, file_path TEXT NOT NULL, file_size INTEGER DEFAULT 0,
+        file_type TEXT, uploaded_by INTEGER NOT NULL, description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS permissions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL,
+        resource TEXT NOT NULL, action TEXT NOT NULL, description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS roles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL,
+        description TEXT, is_default INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS role_permissions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, role_id INTEGER NOT NULL,
+        permission_id INTEGER NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(role_id, permission_id))""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS user_permissions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL,
+        permission_id INTEGER NOT NULL, granted_by INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, permission_id))""")
+    
+    conn.commit()
+    print(f"✅ SQLite initialized at {DB_PATH}")
     conn.close()
 
 
