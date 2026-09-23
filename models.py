@@ -55,16 +55,27 @@ if USE_POSTGRES:
             self._cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         def execute(self, query, params=None):
-            # ✅ تجاهل PRAGMA (خاص بـ SQLite فقط)
-            if query.strip().upper().startswith('PRAGMA'):
+            stripped = query.strip()
+            upper = stripped.upper()
+            
+            # ✅ تجاهل PRAGMA
+            if upper.startswith('PRAGMA'):
                 return self
             
             # ✅ تجاهل VACUUM و ANALYZE
-            if query.strip().upper().startswith(('VACUUM', 'ANALYZE')):
+            if upper.startswith(('VACUUM', 'ANALYZE')):
                 return self
             
             # ✅ تجاهل sqlite_sequence
             if 'sqlite_sequence' in query:
+                return self
+            
+            # ✅ تجاهل BEGIN IMMEDIATE
+            if 'BEGIN IMMEDIATE' in upper:
+                return self
+            
+            # ✅ تجاهل COMMIT/ROLLBACK/BEGIN
+            if upper in ('COMMIT', 'ROLLBACK', 'BEGIN'):
                 return self
             
             query = query.replace('?', '%s')
@@ -79,7 +90,7 @@ if USE_POSTGRES:
                     self._cursor.execute(query)
             except Exception as e:
                 print(f"❌ خطأ في الاستعلام: {e}")
-                print(f"   Query: {query[:200]}")
+                print(f"   Query: {query[:300]}")
                 print(f"   Params: {params}")
                 raise
             
@@ -106,6 +117,20 @@ if USE_POSTGRES:
                 r"strftime\(['\"]%Y-%m['\"],\s*([^)]+)\)",
                 r"TO_CHAR(\1, 'YYYY-MM')",
                 query
+            )
+            
+            # ✅ GROUP_CONCAT → STRING_AGG
+            query = re.sub(
+                r"GROUP_CONCAT\(([^,]+),\s*['\"]([^'\"]+)['\"]\)",
+                r"STRING_AGG(\1, '\2')",
+                query,
+                flags=re.IGNORECASE
+            )
+            query = re.sub(
+                r"GROUP_CONCAT\(([^)]+)\)",
+                r"STRING_AGG(\1, ',')",
+                query,
+                flags=re.IGNORECASE
             )
             
             # INSERT OR IGNORE
@@ -325,7 +350,6 @@ def init_db():
 def _init_postgres():
     """تهيئة PostgreSQL"""
     conn = get_db()
-    # استخدام cursor مباشر
     real_cursor = conn._conn.cursor()
     
     tables = [
@@ -460,7 +484,6 @@ def _init_postgres():
     
     conn.commit()
     
-    # الصلاحيات
     default_permissions = [
         ('tasks.view', 'tasks', 'view', 'عرض المهام'),
         ('tasks.create', 'tasks', 'create', 'إنشاء مهام'),
@@ -513,7 +536,6 @@ def _init_postgres():
     
     conn.commit()
     
-    # ربط الأدوار
     real_cursor.execute("SELECT id, name FROM roles")
     roles_map = {r[1]: r[0] for r in real_cursor.fetchall()}
     real_cursor.execute("SELECT id, name FROM permissions")
@@ -558,7 +580,6 @@ def _init_postgres():
     
     conn.commit()
     
-    # البيانات الافتراضية
     real_cursor.execute("SELECT * FROM company_settings LIMIT 1")
     if not real_cursor.fetchone():
         real_cursor.execute("""
@@ -585,17 +606,15 @@ def _init_postgres():
             print(f"⚠️ مستخدم {uname}: {e}")
             conn.rollback()
     
-    # المدربين الافتراضيين
     try:
         real_cursor.execute("SELECT COUNT(*) FROM trainers")
         count = real_cursor.fetchone()[0]
         if count == 0:
-            trainers_data = [
+            for t in [
                 ('أحمد سليمان', '0551234567', 'ahmed@trainer.com', 'تدريب تقني', 'مدرب معتمد', 1),
                 ('نورة القحطاني', '0552345678', 'noura@trainer.com', 'مهارات قيادية', 'مدربة معتمدة', 1),
                 ('خالد المالكي', '0553456789', 'khalid@trainer.com', 'تطوير برمجيات', 'متخصص', 1)
-            ]
-            for t in trainers_data:
+            ]:
                 real_cursor.execute("""
                     INSERT INTO trainers (name, phone, email, specialty, notes, is_active)
                     VALUES (%s, %s, %s, %s, %s, %s)
@@ -605,7 +624,6 @@ def _init_postgres():
         print(f"⚠️ trainers: {e}")
         conn.rollback()
     
-    # أنواع العقود الافتراضية
     try:
         real_cursor.execute("SELECT COUNT(*) FROM contract_types")
         count = real_cursor.fetchone()[0]
@@ -624,7 +642,6 @@ def _init_postgres():
         print(f"⚠️ contract_types: {e}")
         conn.rollback()
     
-    # أنواع المديولات الافتراضية
     try:
         real_cursor.execute("SELECT COUNT(*) FROM module_types")
         count = real_cursor.fetchone()[0]
