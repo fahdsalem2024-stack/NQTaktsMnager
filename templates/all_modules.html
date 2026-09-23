@@ -26,7 +26,7 @@
     <div class="col-md-3">
         <div class="card bg-success text-white">
             <div class="card-body text-center">
-                <h6>{{ t('active') }}</h6>
+                <h6>{{ t('status_active') }}</h6>
                 <h3>{{ modules|selectattr('status', 'equalto', 'نشط')|list|length }}</h3>
             </div>
         </div>
@@ -57,9 +57,9 @@
                 <th>#</th>
                 <th>{{ t('module_name') }}</th>
                 <th>{{ t('client_name') }}</th>
-                <th>{{ t('client_company') }}</th>
+                <th>{{ t('company') }}</th>
                 <th>{{ t('module_price') }}</th>
-                <th>{{ t('module_status') }}</th>
+                <th>{{ t('status') }}</th>
                 <th>{{ t('start_date') }}</th>
                 <th>{{ t('end_date') }}</th>
                 <th>{{ t('actions') }}</th>
@@ -83,14 +83,10 @@
                         {% elif module.status == 'قيد التطوير' %}bg-warning text-dark
                         {% elif module.status == 'مكتمل' %}bg-info
                         {% else %}bg-secondary{% endif %}">
-                        {% if get_lang() == 'en' %}
-                            {% if module.status == 'نشط' %}Active
-                            {% elif module.status == 'قيد التطوير' %}In Development
-                            {% elif module.status == 'مكتمل' %}Completed
-                            {% else %}Stopped{% endif %}
-                        {% else %}
-                            {{ module.status }}
-                        {% endif %}
+                        {% if module.status == 'نشط' %}{{ t('status_active') }}
+                        {% elif module.status == 'قيد التطوير' %}{{ t('in_development') }}
+                        {% elif module.status == 'مكتمل' %}{{ t('completed_module') }}
+                        {% else %}{{ t('stopped') }}{% endif %}
                     </span>
                 </td>
                 <td>{{ module.start_date or '-' }}</td>

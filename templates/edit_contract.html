@@ -5,30 +5,28 @@
     <div class="col-lg-8">
         <div class="card shadow-lg border-0 rounded-4">
             <div class="card-header bg-gradient-warning text-white rounded-top-4 py-3">
-                <h4 class="mb-0"><i class="bi bi-pencil-square me-2"></i> تعديل العقد</h4>
+                <h4 class="mb-0"><i class="bi bi-pencil-square me-2"></i> {{ t('edit_contract') }}</h4>
             </div>
             <div class="card-body p-4">
                 <form method="POST" id="editContractForm">
-                    
-                    <!-- ===== معلومات العقد ===== -->
                     <div class="section-title">
-                        <i class="bi bi-info-circle me-2"></i> معلومات العقد
+                        <i class="bi bi-info-circle me-2"></i> {{ t('contract_info') }}
                     </div>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">العميل <span class="text-danger">*</span></label>
+                            <label class="form-label fw-bold">{{ t('client') }} <span class="text-danger">*</span></label>
                             <select name="client_id" class="form-select form-select-lg" required>
                                 {% for client in clients %}
                                 <option value="{{ client.id }}" {% if client.id == contract.client_id %}selected{% endif %}>
-                                    {{ client.name }} ({{ client.company_name or 'بدون شركة' }})
+                                    {{ client.name }} ({{ client.company_name or t('no_company') }})
                                 </option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">نوع العقد</label>
+                            <label class="form-label fw-bold">{{ t('contract_type') }}</label>
                             <select name="contract_type_id" class="form-select form-select-lg">
-                                <option value="">-- اختر نوع العقد --</option>
+                                <option value="">{{ t('choose_contract_type') }}</option>
                                 {% for type in contract_types %}
                                 <option value="{{ type.id }}" {% if type.id == contract.contract_type_id %}selected{% endif %}>
                                     {{ type.name }}
@@ -37,72 +35,71 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">رقم العقد <span class="text-danger">*</span></label>
+                            <label class="form-label fw-bold">{{ t('contract_number') }} <span class="text-danger">*</span></label>
                             <input type="text" name="contract_number" class="form-control form-control-lg" value="{{ contract.contract_number }}" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">عنوان العقد <span class="text-danger">*</span></label>
+                            <label class="form-label fw-bold">{{ t('title') }} <span class="text-danger">*</span></label>
                             <input type="text" name="title" class="form-control form-control-lg" value="{{ contract.title }}" required>
                         </div>
                         <div class="col-12">
-                            <label class="form-label fw-bold">الوصف</label>
+                            <label class="form-label fw-bold">{{ t('description') }}</label>
                             <textarea name="description" class="form-control" rows="2">{{ contract.description or '' }}</textarea>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">تاريخ البداية <span class="text-danger">*</span></label>
+                            <label class="form-label fw-bold">{{ t('start_date') }} <span class="text-danger">*</span></label>
                             <input type="date" name="start_date" class="form-control form-control-lg" value="{{ contract.start_date }}" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">تاريخ النهاية <span class="text-danger">*</span></label>
+                            <label class="form-label fw-bold">{{ t('end_date') }} <span class="text-danger">*</span></label>
                             <input type="date" name="end_date" class="form-control form-control-lg" value="{{ contract.end_date }}" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">قيمة العقد (ر.س)</label>
+                            <label class="form-label fw-bold">{{ t('contract_value') }} ({{ t('currency') }})</label>
                             <input type="number" name="contract_value" class="form-control form-control-lg" value="{{ contract.contract_value }}" step="0.01">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">الحالة</label>
+                            <label class="form-label fw-bold">{{ t('status') }}</label>
                             <select name="status" class="form-select form-select-lg">
-                                <option value="نشط" {% if contract.status == 'نشط' %}selected{% endif %}>نشط</option>
-                                <option value="معلق" {% if contract.status == 'معلق' %}selected{% endif %}>معلق</option>
-                                <option value="منتهي" {% if contract.status == 'منتهي' %}selected{% endif %}>منتهي</option>
-                                <option value="ملغي" {% if contract.status == 'ملغي' %}selected{% endif %}>ملغي</option>
+                                <option value="نشط" {% if contract.status == 'نشط' %}selected{% endif %}>{{ t('status_active') }}</option>
+                                <option value="معلق" {% if contract.status == 'معلق' %}selected{% endif %}>{{ t('status_pending') }}</option>
+                                <option value="منتهي" {% if contract.status == 'منتهي' %}selected{% endif %}>{{ t('status_finished') }}</option>
+                                <option value="ملغي" {% if contract.status == 'ملغي' %}selected{% endif %}>{{ t('status_cancelled') }}</option>
                             </select>
                         </div>
                         <div class="col-12">
-                            <label class="form-label fw-bold">ملاحظات</label>
+                            <label class="form-label fw-bold">{{ t('notes') }}</label>
                             <textarea name="notes" class="form-control" rows="2">{{ contract.notes or '' }}</textarea>
                         </div>
                     </div>
 
                     <hr>
 
-                    <!-- ===== جدولة الدفعات ===== -->
                     <div class="section-title">
-                        <i class="bi bi-calendar-event me-2"></i> جدولة الدفعات
+                        <i class="bi bi-calendar-event me-2"></i> {{ t('payment_schedule') }}
                     </div>
                     <div class="card border-0 mb-4" style="background: #fefce8;">
                         <div class="card-body">
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold">المبلغ الإجمالي للعقد (ر.س)</label>
+                                    <label class="form-label fw-bold">{{ t('total_amount') }} ({{ t('currency') }})</label>
                                     <input type="number" name="total_amount" id="totalAmount" class="form-control form-control-lg" value="{{ contract.total_amount or contract.contract_value }}" step="0.01" onchange="updateInstallments()">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold">عدد الدفعات</label>
+                                    <label class="form-label fw-bold">{{ t('installment_count') }}</label>
                                     <input type="number" name="installment_count" id="installmentCount" class="form-control form-control-lg" value="{{ contract_payments|length if contract_payments else 0 }}" min="0" max="12" onchange="updateInstallments()">
                                 </div>
                             </div>
                             <div class="mt-3" id="installmentsContainer">
-                                <label class="form-label fw-bold">تفاصيل الدفعات</label>
+                                <label class="form-label fw-bold">{{ t('installment_details') }}</label>
                                 <div class="table-responsive">
                                     <table class="table table-bordered table-sm" id="installmentsTable">
                                         <thead>
                                             <tr>
                                                 <th>#</th>
-                                                <th>المبلغ (ر.س)</th>
-                                                <th>تاريخ الاستحقاق</th>
-                                                <th>ملاحظات</th>
+                                                <th>{{ t('amount') }} ({{ t('currency') }})</th>
+                                                <th>{{ t('due_date') }}</th>
+                                                <th>{{ t('notes') }}</th>
                                             </tr>
                                         </thead>
                                         <tbody id="installmentsBody">
@@ -110,29 +107,17 @@
                                                 {% for payment in contract_payments %}
                                                 <tr>
                                                     <td>{{ payment.installment_number }}</td>
-                                                    <td>
-                                                        <input type="number" name="installment_amount_{{ payment.installment_number }}" class="form-control form-control-sm" value="{{ payment.amount }}" step="0.01">
-                                                    </td>
-                                                    <td>
-                                                        <input type="date" name="installment_due_date_{{ payment.installment_number }}" class="form-control form-control-sm" value="{{ payment.due_date or '' }}">
-                                                    </td>
-                                                    <td>
-                                                        <input type="text" name="installment_notes_{{ payment.installment_number }}" class="form-control form-control-sm" value="{{ payment.notes or '' }}" placeholder="اختياري">
-                                                    </td>
+                                                    <td><input type="number" name="installment_amount_{{ payment.installment_number }}" class="form-control form-control-sm" value="{{ payment.amount }}" step="0.01"></td>
+                                                    <td><input type="date" name="installment_due_date_{{ payment.installment_number }}" class="form-control form-control-sm" value="{{ payment.due_date or '' }}"></td>
+                                                    <td><input type="text" name="installment_notes_{{ payment.installment_number }}" class="form-control form-control-sm" value="{{ payment.notes or '' }}" placeholder="{{ t('optional') }}"></td>
                                                 </tr>
                                                 {% endfor %}
                                             {% else %}
                                                 <tr>
                                                     <td>1</td>
-                                                    <td>
-                                                        <input type="number" name="installment_amount_1" class="form-control form-control-sm" value="0" step="0.01">
-                                                    </td>
-                                                    <td>
-                                                        <input type="date" name="installment_due_date_1" class="form-control form-control-sm">
-                                                    </td>
-                                                    <td>
-                                                        <input type="text" name="installment_notes_1" class="form-control form-control-sm" placeholder="اختياري">
-                                                    </td>
+                                                    <td><input type="number" name="installment_amount_1" class="form-control form-control-sm" value="0" step="0.01"></td>
+                                                    <td><input type="date" name="installment_due_date_1" class="form-control form-control-sm"></td>
+                                                    <td><input type="text" name="installment_notes_1" class="form-control form-control-sm" placeholder="{{ t('optional') }}"></td>
                                                 </tr>
                                             {% endif %}
                                         </tbody>
@@ -142,13 +127,12 @@
                         </div>
                     </div>
 
-                    <!-- ===== أزرار التحكم ===== -->
                     <div class="d-flex gap-2 mt-4">
                         <button type="submit" class="btn btn-primary flex-grow-1 py-2">
-                            <i class="bi bi-save me-2"></i> حفظ التغييرات
+                            <i class="bi bi-save me-2"></i> {{ t('save_changes') }}
                         </button>
                         <a href="/contract/{{ contract.id }}" class="btn btn-outline-secondary py-2">
-                            <i class="bi bi-arrow-right me-2"></i> رجوع
+                            <i class="bi bi-arrow-right me-2"></i> {{ t('back') }}
                         </a>
                     </div>
                 </form>
@@ -166,27 +150,19 @@ function updateInstallments() {
     baseDate.setMonth(baseDate.getMonth() + 1);
     let html = '';
     if (count === 0) {
-        html = `<tr><td colspan="4" class="text-center text-muted">لا توجد دفعات</td></tr>`;
+        html = `<tr><td colspan="4" class="text-center text-muted">{{ t('no_installments') }}</td></tr>`;
     } else {
         const amount = (totalAmount / count).toFixed(2);
         for (let i = 1; i <= count; i++) {
             const dueDate = new Date(baseDate);
             dueDate.setMonth(dueDate.getMonth() + (i - 1));
             const dateStr = dueDate.toISOString().split('T')[0];
-            html += `
-                <tr>
-                    <td>${i}</td>
-                    <td>
-                        <input type="number" name="installment_amount_${i}" class="form-control form-control-sm" value="${amount}" step="0.01">
-                    </td>
-                    <td>
-                        <input type="date" name="installment_due_date_${i}" class="form-control form-control-sm" value="${dateStr}">
-                    </td>
-                    <td>
-                        <input type="text" name="installment_notes_${i}" class="form-control form-control-sm" placeholder="اختياري">
-                    </td>
-                </tr>
-            `;
+            html += `<tr>
+                <td>${i}</td>
+                <td><input type="number" name="installment_amount_${i}" class="form-control form-control-sm" value="${amount}" step="0.01"></td>
+                <td><input type="date" name="installment_due_date_${i}" class="form-control form-control-sm" value="${dateStr}"></td>
+                <td><input type="text" name="installment_notes_${i}" class="form-control form-control-sm" placeholder="{{ t('optional') }}"></td>
+            </tr>`;
         }
     }
     tbody.innerHTML = html;
@@ -197,9 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
-.bg-gradient-warning {
-    background: linear-gradient(135deg, #f57c00, #f9a825);
-}
+.bg-gradient-warning { background: linear-gradient(135deg, #f57c00, #f9a825); }
 .section-title {
     font-size: 1.1rem;
     font-weight: 700;
@@ -212,30 +186,6 @@ document.addEventListener('DOMContentLoaded', function() {
     border-radius: 12px;
     padding: 12px 16px;
     border: 2px solid #e2e8f0;
-    transition: all 0.3s ease;
-}
-.form-control-lg:focus, .form-select-lg:focus {
-    border-color: #2563EB;
-    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.15);
-}
-.btn-primary {
-    background: linear-gradient(135deg, #1a237e, #0d47a1);
-    border: none;
-    border-radius: 12px;
-    transition: all 0.3s ease;
-}
-.btn-primary:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(26, 35, 126, 0.3);
-}
-.btn-outline-secondary {
-    border-radius: 12px;
-    border: 2px solid #e2e8f0;
-    transition: all 0.3s ease;
-}
-.btn-outline-secondary:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.05);
 }
 </style>
 {% endblock %}

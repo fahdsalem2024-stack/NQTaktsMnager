@@ -5,60 +5,56 @@
     <div class="col-md-8">
         <div class="card">
             <div class="card-header bg-info text-white">
-                <h4 class="mb-0"><i class="bi bi-pencil"></i> تعديل الدفعة</h4>
+                <h4 class="mb-0"><i class="bi bi-pencil"></i> {{ t('edit_payment') }}</h4>
             </div>
             <div class="card-body">
                 <form method="POST">
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">المبلغ <span class="text-danger">*</span></label>
+                            <label class="form-label">{{ t('amount') }} <span class="text-danger">*</span></label>
                             <input type="number" name="amount" class="form-control" value="{{ payment.amount }}" required step="0.01">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">تاريخ الدفع <span class="text-danger">*</span></label>
+                            <label class="form-label">{{ t('payment_date') }} <span class="text-danger">*</span></label>
                             <input type="date" name="payment_date" class="form-control" value="{{ payment.payment_date }}" required>
                         </div>
                     </div>
-                    
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">تاريخ الاستحقاق</label>
+                            <label class="form-label">{{ t('due_date') }}</label>
                             <input type="date" name="due_date" class="form-control" value="{{ payment.due_date or '' }}">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">طريقة الدفع</label>
+                            <label class="form-label">{{ t('payment_method') }}</label>
                             <select name="payment_method" class="form-select">
-                                <option value="نقدي" {% if payment.payment_method == 'نقدي' %}selected{% endif %}>نقدي</option>
-                                <option value="تحويل بنكي" {% if payment.payment_method == 'تحويل بنكي' %}selected{% endif %}>تحويل بنكي</option>
-                                <option value="شيك" {% if payment.payment_method == 'شيك' %}selected{% endif %}>شيك</option>
-                                <option value="بطاقة ائتمان" {% if payment.payment_method == 'بطاقة ائتمان' %}selected{% endif %}>بطاقة ائتمان</option>
-                                <option value="أخرى" {% if payment.payment_method == 'أخرى' %}selected{% endif %}>أخرى</option>
+                                <option value="نقدي" {% if payment.payment_method == 'نقدي' %}selected{% endif %}>{{ t('cash') }}</option>
+                                <option value="تحويل بنكي" {% if payment.payment_method == 'تحويل بنكي' %}selected{% endif %}>{{ t('bank_transfer') }}</option>
+                                <option value="شيك" {% if payment.payment_method == 'شيك' %}selected{% endif %}>{{ t('check') }}</option>
+                                <option value="بطاقة ائتمان" {% if payment.payment_method == 'بطاقة ائتمان' %}selected{% endif %}>{{ t('credit_card') }}</option>
+                                <option value="أخرى" {% if payment.payment_method == 'أخرى' %}selected{% endif %}>{{ t('other') }}</option>
                             </select>
                         </div>
                     </div>
-                    
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">الحالة</label>
+                            <label class="form-label">{{ t('status') }}</label>
                             <select name="status" class="form-select">
-                                <option value="مدفوع" {% if payment.status == 'مدفوع' %}selected{% endif %}>مدفوع</option>
-                                <option value="معلق" {% if payment.status == 'معلق' %}selected{% endif %}>معلق</option>
-                                <option value="متأخر" {% if payment.status == 'متأخر' %}selected{% endif %}>متأخر</option>
+                                <option value="مدفوع" {% if payment.status == 'مدفوع' %}selected{% endif %}>{{ t('status_paid') }}</option>
+                                <option value="معلق" {% if payment.status == 'معلق' %}selected{% endif %}>{{ t('status_pending') }}</option>
+                                <option value="متأخر" {% if payment.status == 'متأخر' %}selected{% endif %}>{{ t('status_overdue') }}</option>
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">رقم الفاتورة</label>
+                            <label class="form-label">{{ t('invoice_number') }}</label>
                             <input type="text" name="invoice_number" class="form-control" value="{{ payment.invoice_number or '' }}">
                         </div>
                     </div>
-                    
                     <div class="mb-3">
-                        <label class="form-label">ملاحظات</label>
+                        <label class="form-label">{{ t('notes') }}</label>
                         <textarea name="notes" class="form-control" rows="3">{{ payment.notes or '' }}</textarea>
                     </div>
-                    
                     <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-save"></i> حفظ التغييرات
+                        <i class="bi bi-save"></i> {{ t('save_changes') }}
                     </button>
                 </form>
             </div>

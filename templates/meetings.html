@@ -2,16 +2,16 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-    <h2><i class="bi bi-calendar-event text-primary"></i> المواعيد</h2>
+    <h2><i class="bi bi-calendar-event text-primary"></i> {{ t('meetings') }}</h2>
     <a href="/add_meeting" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> موعد جديد
+        <i class="bi bi-plus-circle"></i> {{ t('add_meeting') }}
     </a>
 </div>
 
 <!-- ===== المواعيد القادمة ===== -->
 <div class="card mb-4">
     <div class="card-header bg-success text-white">
-        <h5 class="mb-0"><i class="bi bi-calendar-check"></i> المواعيد القادمة</h5>
+        <h5 class="mb-0"><i class="bi bi-calendar-check"></i> {{ t('upcoming_meetings') }}</h5>
     </div>
     <div class="card-body">
         {% if upcoming %}
@@ -22,7 +22,7 @@
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <h6 class="fw-bold mb-1">{{ meeting.title }}</h6>
-                            <span class="badge bg-success">مجدول</span>
+                            <span class="badge bg-success">{{ t('status_scheduled') }}</span>
                             <p class="text-muted small mt-1 mb-0">
                                 <i class="bi bi-person"></i> {{ meeting.client_name }}
                             </p>
@@ -32,18 +32,18 @@
                                 <i class="bi bi-clock"></i> {{ meeting.meeting_date[:16] }}
                             </small>
                             <small class="text-muted d-block">
-                                <i class="bi bi-hourglass-split"></i> {{ meeting.duration }} دقيقة
+                                <i class="bi bi-hourglass-split"></i> {{ meeting.duration }} {{ t('minutes') }}
                             </small>
                             {% if meeting.meeting_link %}
                             <a href="{{ meeting.meeting_link }}" target="_blank" class="btn btn-sm btn-outline-primary mt-1">
-                                <i class="bi bi-link"></i> رابط
+                                <i class="bi bi-link"></i> {{ t('link') }}
                             </a>
                             {% endif %}
                         </div>
                     </div>
                     <div class="mt-2">
                         <a href="/meeting/{{ meeting.id }}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-eye"></i> تفاصيل
+                            <i class="bi bi-eye"></i> {{ t('view_details') }}
                         </a>
                     </div>
                 </div>
@@ -53,7 +53,7 @@
         {% else %}
         <div class="text-center py-3 text-muted">
             <i class="bi bi-calendar-check" style="font-size: 2rem;"></i>
-            <p class="mt-2">لا توجد مواعيد قادمة</p>
+            <p class="mt-2">{{ t('no_upcoming_meetings') }}</p>
         </div>
         {% endif %}
     </div>
@@ -62,7 +62,7 @@
 <!-- ===== المواعيد السابقة ===== -->
 <div class="card">
     <div class="card-header bg-secondary text-white">
-        <h5 class="mb-0"><i class="bi bi-calendar-x"></i> المواعيد السابقة</h5>
+        <h5 class="mb-0"><i class="bi bi-calendar-x"></i> {{ t('past_meetings') }}</h5>
     </div>
     <div class="card-body p-0">
         {% if past %}
@@ -70,12 +70,12 @@
             <table class="table table-modern mb-0">
                 <thead>
                     <tr>
-                        <th>العنوان</th>
-                        <th>العميل</th>
-                        <th>التاريخ</th>
-                        <th>المدة</th>
-                        <th>الحالة</th>
-                        <th>إجراءات</th>
+                        <th>{{ t('title') }}</th>
+                        <th>{{ t('client') }}</th>
+                        <th>{{ t('date') }}</th>
+                        <th>{{ t('duration') }}</th>
+                        <th>{{ t('status') }}</th>
+                        <th>{{ t('actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -84,13 +84,15 @@
                         <td><span class="fw-bold">{{ meeting.title }}</span></td>
                         <td>{{ meeting.client_name }}</td>
                         <td>{{ meeting.meeting_date[:16] }}</td>
-                        <td>{{ meeting.duration }} دقيقة</td>
+                        <td>{{ meeting.duration }} {{ t('minutes') }}</td>
                         <td>
                             <span class="badge 
                                 {% if meeting.status == 'تم' %}bg-success
                                 {% elif meeting.status == 'ملغي' %}bg-danger
                                 {% else %}bg-secondary{% endif %}">
-                                {{ meeting.status }}
+                                {% if meeting.status == 'تم' %}{{ t('status_done') }}
+                                {% elif meeting.status == 'ملغي' %}{{ t('status_cancelled') }}
+                                {% else %}{{ meeting.status }}{% endif %}
                             </span>
                         </td>
                         <td>
@@ -106,7 +108,7 @@
         {% else %}
         <div class="text-center py-3 text-muted">
             <i class="bi bi-calendar-x" style="font-size: 2rem;"></i>
-            <p class="mt-2">لا توجد مواعيد سابقة</p>
+            <p class="mt-2">{{ t('no_past_meetings') }}</p>
         </div>
         {% endif %}
     </div>
@@ -117,12 +119,11 @@
     background: #f8fafc;
     border-radius: 12px;
     padding: 16px;
-    border-right: 4px solid #22c55e;
+    border-{% if get_lang() == 'ar' %}right{% else %}left{% endif %}: 4px solid #22c55e;
     transition: all 0.3s ease;
 }
 .meeting-card:hover {
     background: #f1f5f9;
-    transform: translateX(-4px);
 }
 .table-modern { font-size: 14px; }
 .table-modern thead th {

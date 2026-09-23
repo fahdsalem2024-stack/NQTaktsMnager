@@ -2,23 +2,22 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-person-badge"></i> تفاصيل المدرب</h2>
+    <h2><i class="bi bi-person-badge"></i> {{ t('trainer_details') }}</h2>
     <div>
         <a href="/edit_trainer/{{ trainer.id }}" class="btn btn-warning">
-            <i class="bi bi-pencil"></i> تعديل
+            <i class="bi bi-pencil"></i> {{ t('edit') }}
         </a>
         <a href="/trainers" class="btn btn-secondary">
-            <i class="bi bi-arrow-right"></i> رجوع
+            <i class="bi bi-arrow-right"></i> {{ t('back') }}
         </a>
     </div>
 </div>
 
-<!-- ===== بطاقة معلومات المدرب ===== -->
 <div class="row">
     <div class="col-md-4">
         <div class="card shadow-sm">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-person"></i> معلومات المدرب</h5>
+                <h5 class="mb-0"><i class="bi bi-person"></i> {{ t('trainer_info') }}</h5>
             </div>
             <div class="card-body">
                 <div class="text-center mb-3">
@@ -28,33 +27,33 @@
                     </div>
                     <h4 class="mt-2">{{ trainer.name }}</h4>
                     {% if trainer.is_active %}
-                    <span class="badge bg-success">نشط</span>
+                    <span class="badge bg-success">{{ t('status_active') }}</span>
                     {% else %}
-                    <span class="badge bg-secondary">غير نشط</span>
+                    <span class="badge bg-secondary">{{ t('status_inactive') }}</span>
                     {% endif %}
                 </div>
                 <hr>
                 <div class="row">
                     <div class="col-6">
-                        <small class="text-muted d-block">الهاتف</small>
+                        <small class="text-muted d-block">{{ t('phone') }}</small>
                         <strong>{{ trainer.phone or '-' }}</strong>
                     </div>
                     <div class="col-6">
-                        <small class="text-muted d-block">البريد</small>
+                        <small class="text-muted d-block">{{ t('email') }}</small>
                         <strong>{{ trainer.email or '-' }}</strong>
                     </div>
                 </div>
                 <div class="mt-2">
-                    <small class="text-muted d-block">التخصص</small>
+                    <small class="text-muted d-block">{{ t('specialty') }}</small>
                     <strong>{{ trainer.specialty or '-' }}</strong>
                 </div>
                 <div class="mt-2">
-                    <small class="text-muted d-block">عدد العملاء</small>
+                    <small class="text-muted d-block">{{ t('client_count') }}</small>
                     <strong><span class="badge bg-primary">{{ trainer.client_count or 0 }}</span></strong>
                 </div>
                 {% if trainer.notes %}
                 <div class="mt-2">
-                    <small class="text-muted d-block">ملاحظات</small>
+                    <small class="text-muted d-block">{{ t('notes') }}</small>
                     <p class="border p-2 rounded bg-light">{{ trainer.notes }}</p>
                 </div>
                 {% endif %}
@@ -62,11 +61,10 @@
         </div>
     </div>
 
-    <!-- ===== قائمة العملاء ===== -->
     <div class="col-md-8">
         <div class="card shadow-sm">
             <div class="card-header bg-success text-white">
-                <h5 class="mb-0"><i class="bi bi-people"></i> العملاء المرتبطين ({{ clients|length }})</h5>
+                <h5 class="mb-0"><i class="bi bi-people"></i> {{ t('linked_clients') }} ({{ clients|length }})</h5>
             </div>
             <div class="card-body">
                 {% if clients %}
@@ -75,11 +73,11 @@
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>اسم العميل</th>
-                                <th>الشركة</th>
-                                <th>الهاتف</th>
-                                <th>البريد</th>
-                                <th>إجراءات</th>
+                                <th>{{ t('client_name') }}</th>
+                                <th>{{ t('company') }}</th>
+                                <th>{{ t('phone') }}</th>
+                                <th>{{ t('email') }}</th>
+                                <th>{{ t('actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -95,10 +93,10 @@
                                 <td>{{ client.phone or '-' }}</td>
                                 <td>{{ client.email or '-' }}</td>
                                 <td>
-                                    <a href="/client_tasks/{{ client.id }}" class="btn btn-sm btn-primary" title="المهام">
+                                    <a href="/client_tasks/{{ client.id }}" class="btn btn-sm btn-primary" title="{{ t('tasks') }}">
                                         <i class="bi bi-list-task"></i>
                                     </a>
-                                    <a href="/client_payments/{{ client.id }}" class="btn btn-sm btn-success" title="المدفوعات">
+                                    <a href="/client_payments/{{ client.id }}" class="btn btn-sm btn-success" title="{{ t('payments') }}">
                                         <i class="bi bi-coin"></i>
                                     </a>
                                 </td>
@@ -110,23 +108,13 @@
                 {% else %}
                 <div class="alert alert-info text-center">
                     <i class="bi bi-people" style="font-size:48px;display:block;"></i>
-                    <h4>لا يوجد عملاء مرتبطين</h4>
-                    <p>لم يتم ربط أي عميل بهذا المدرب بعد</p>
-                    <a href="/clients" class="btn btn-primary mt-2">➡️ الذهاب للعملاء</a>
+                    <h4>{{ t('no_linked_clients') }}</h4>
+                    <p>{{ t('no_linked_clients_desc') }}</p>
+                    <a href="/clients" class="btn btn-primary mt-2">➡️ {{ t('clients') }}</a>
                 </div>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
-
-<style>
-.card {
-    transition: all 0.3s ease;
-}
-.card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
-}
-</style>
 {% endblock %}
