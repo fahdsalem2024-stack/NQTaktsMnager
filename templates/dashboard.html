@@ -118,13 +118,77 @@
         </div>
     </div>
 
-    <!-- ===== توزيع المهام والعقود ===== -->
+    <!-- ============================================================ -->
+    <!-- ===== الرسوم البيانية الجديدة ===== -->
+    <!-- ============================================================ -->
+    
+    <!-- ===== صف 1: إيرادات شهرية + توزيع المهام ===== -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-graph-up-arrow text-success me-2"></i>
+                        {{ t('monthly_revenue') }} ({{ t('last_6_months') }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="revenueChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pie-chart text-primary me-2"></i>
+                        {{ t('task_distribution') }}
+                    </h5>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <canvas id="tasksChart" style="max-height: 280px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== صف 2: توزيع العقود + أداء المدربين ===== -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pie-chart text-warning me-2"></i>
+                        {{ t('contract_distribution') }}
+                    </h5>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <canvas id="contractsChart" style="max-height: 280px;"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bar-chart text-info me-2"></i>
+                        {{ t('trainers_performance') }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="trainerChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== توزيع المهام والعقود (تفاصيل رقمية) ===== -->
     <div class="row g-4 mb-4">
         <!-- ===== توزيع المهام ===== -->
         <div class="col-lg-6">
             <div class="card h-100">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-pie-chart text-primary me-2"></i> {{ t('task_distribution') }}</h5>
+                    <h5 class="mb-0"><i class="bi bi-list-check text-primary me-2"></i> {{ t('task_details') }}</h5>
                     <a href="/tasks" class="btn btn-sm btn-outline-primary">{{ t('view_all') }}</a>
                 </div>
                 <div class="card-body">
@@ -185,7 +249,7 @@
         <div class="col-lg-6">
             <div class="card h-100">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-pie-chart text-success me-2"></i> {{ t('contract_distribution') }}</h5>
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-text text-success me-2"></i> {{ t('contract_details') }}</h5>
                     <a href="/contracts" class="btn btn-sm btn-outline-primary">{{ t('view_all') }}</a>
                 </div>
                 <div class="card-body">
@@ -479,4 +543,203 @@
     }
 }
 </style>
+
+<!-- ============================================================ -->
+<!-- ===== Chart.js ===== -->
+<!-- ============================================================ -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // ===== Chart Defaults =====
+    if (typeof Chart !== 'undefined') {
+        Chart.defaults.font.family = 'Tajawal, sans-serif';
+        Chart.defaults.font.size = 12;
+        Chart.defaults.color = '#475569';
+    }
+    
+    // ===== 1. الإيرادات الشهرية (Line Chart) =====
+    const revenueCtx = document.getElementById('revenueChart');
+    if (revenueCtx && typeof Chart !== 'undefined') {
+        new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: {{ chart_months|tojson|safe }},
+                datasets: [{
+                    label: '{{ t("revenue") }} ({{ t("currency") }})',
+                    data: {{ chart_revenues|tojson|safe }},
+                    borderColor: '#22c55e',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#22c55e',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        rtl: true,
+                        backgroundColor: '#1a1a2e',
+                        padding: 12,
+                        titleFont: { size: 14, weight: 'bold' },
+                        bodyFont: { size: 13 }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString();
+                            }
+                        },
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+    
+    // ===== 2. توزيع المهام (Doughnut) =====
+    const tasksCtx = document.getElementById('tasksChart');
+    if (tasksCtx && typeof Chart !== 'undefined') {
+        new Chart(tasksCtx, {
+            type: 'doughnut',
+            data: {
+                labels: [
+                    '{{ t("completed_tasks") }}',
+                    '{{ t("in_progress_tasks") }}',
+                    '{{ t("overdue_tasks") }}',
+                    '{{ t("not_started_tasks") }}'
+                ],
+                datasets: [{
+                    data: {{ chart_tasks|tojson|safe }},
+                    backgroundColor: ['#22c55e', '#f59e0b', '#ef4444', '#64748b'],
+                    borderWidth: 3,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        rtl: true,
+                        labels: {
+                            padding: 12,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            font: { size: 11 }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // ===== 3. توزيع العقود (Doughnut) =====
+    const contractsCtx = document.getElementById('contractsChart');
+    if (contractsCtx && typeof Chart !== 'undefined') {
+        new Chart(contractsCtx, {
+            type: 'doughnut',
+            data: {
+                labels: [
+                    '{{ t("active_contracts") }}',
+                    '{{ t("pending_contracts") }}',
+                    '{{ t("completed_contracts") }}'
+                ],
+                datasets: [{
+                    data: {{ chart_contracts|tojson|safe }},
+                    backgroundColor: ['#22c55e', '#f59e0b', '#64748b'],
+                    borderWidth: 3,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        rtl: true,
+                        labels: {
+                            padding: 12,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            font: { size: 11 }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // ===== 4. أداء المدربين (Bar Chart) =====
+    const trainerCtx = document.getElementById('trainerChart');
+    if (trainerCtx && typeof Chart !== 'undefined') {
+        new Chart(trainerCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ chart_trainer_names|tojson|safe }},
+                datasets: [
+                    {
+                        label: '{{ t("tasks_count") }}',
+                        data: {{ chart_trainer_tasks|tojson|safe }},
+                        backgroundColor: 'rgba(37, 99, 235, 0.8)',
+                        borderRadius: 8,
+                        borderSkipped: false
+                    },
+                    {
+                        label: '{{ t("clients_count") }}',
+                        data: {{ chart_trainer_clients|tojson|safe }},
+                        backgroundColor: 'rgba(34, 197, 94, 0.8)',
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        rtl: true,
+                        labels: {
+                            padding: 12,
+                            usePointStyle: true,
+                            pointStyle: 'rectRounded'
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 },
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+
 {% endblock %}
