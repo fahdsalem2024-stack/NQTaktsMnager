@@ -103,7 +103,7 @@
                                 <span class="badge bg-secondary">{{ t('status_inactive') }}</span>
                                 {% endif %}
                             </td>
-                            <td>{{ type.created_at[:10] }}</td>
+                            <td>{{ type.created_at|safe_date }}</td>
                             <td>
                                 <div class="btn-group btn-group-sm">
                                     <button class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#editModuleTypeModal{{ type.id }}">

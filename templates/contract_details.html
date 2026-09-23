@@ -296,7 +296,7 @@
                         <td>{{ att.description or '-' }}</td>
                         <td>{{ (att.file_size / 1024) | round(1) }} KB</td>
                         <td>{{ att.uploaded_by_name }}</td>
-                        <td>{{ att.created_at[:16] }}</td>
+                        <td>{{ att.created_at|safe_datetime }}</td>
                         <td>
                             <a href="/download_contract_attachment/{{ att.id }}" class="btn btn-sm btn-outline-info">
                                 <i class="bi bi-download"></i>

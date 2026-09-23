@@ -21,6 +21,36 @@ os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'contracts'), exist_ok=Tru
 # ===== قاعدة البيانات =====
 init_db()
 
+
+# ============================================================
+# ===== Jinja Filters للـ datetime =====
+# ============================================================
+@app.template_filter('safe_date')
+def safe_date_filter(dt, format='%Y-%m-%d'):
+    """تحويل datetime لـ string بشكل آمن (date فقط)"""
+    if dt is None:
+        return '-'
+    if isinstance(dt, str):
+        return dt[:10] if len(dt) >= 10 else dt
+    try:
+        return dt.strftime(format)
+    except:
+        return str(dt)
+
+
+@app.template_filter('safe_datetime')
+def safe_datetime_filter(dt, format='%Y-%m-%d %H:%M'):
+    """تحويل datetime لـ string بشكل آمن (date + time)"""
+    if dt is None:
+        return '-'
+    if isinstance(dt, str):
+        return dt[:16] if len(dt) >= 16 else dt
+    try:
+        return dt.strftime(format)
+    except:
+        return str(dt)
+
+
 # ===== تسجيل Blueprints =====
 from routes import (
     auth_bp, users_bp, clients_bp, tasks_bp,
@@ -41,6 +71,7 @@ app.register_blueprint(meetings_bp)
 app.register_blueprint(reports_bp)
 app.register_blueprint(settings_bp)
 app.register_blueprint(backups_bp)
+
 
 # ===== دوال السياق =====
 @app.context_processor

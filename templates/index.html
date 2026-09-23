@@ -202,7 +202,7 @@
                             </small>
                         </div>
                         <div class="text-end">
-                            <small class="text-muted d-block">{{ contract.created_at[:10] }}</small>
+                            <small class="text-muted d-block">{{ contract.created_at|safe_date }}</small>
                             <a href="/contract/{{ contract.id }}" class="btn btn-sm btn-outline-primary mt-1">
                                 <i class="bi bi-eye"></i>
                             </a>

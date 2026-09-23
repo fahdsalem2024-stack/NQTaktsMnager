@@ -260,7 +260,7 @@
                                     {% else %}{{ contract.status }}{% endif %}
                                 </span>
                                 <br>
-                                <small class="text-muted">{{ contract.created_at[:10] }}</small>
+                                <small class="text-muted">{{ contract.created_at|safe_date }}</small>
                             </div>
                         </a>
                         {% else %}
@@ -336,7 +336,7 @@
                                 <br><small class="text-muted">{{ activity.details }}</small>
                                 {% endif %}
                             </div>
-                            <small class="text-muted">{{ activity.created_at[:16] }}</small>
+                            <small class="text-muted">{{ activity.created_at|safe_datetime }}</small>
                         </div>
                         {% else %}
                         <div class="text-center py-4 text-muted">
