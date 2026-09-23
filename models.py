@@ -6,7 +6,6 @@ import hashlib
 import bcrypt
 import re
 
-# ===== كشف نوع قاعدة البيانات =====
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
@@ -24,11 +23,7 @@ else:
     print(f"⚠️ Using SQLite at {DB_PATH}")
 
 
-# ============================================================
-# ===== Helper: Format datetime =====
-# ============================================================
 def format_date(dt, fmt='%Y-%m-%d'):
-    """تحويل datetime لـ string بأمان"""
     if dt is None:
         return '-'
     if isinstance(dt, str):
@@ -40,7 +35,6 @@ def format_date(dt, fmt='%Y-%m-%d'):
 
 
 def format_datetime(dt, fmt='%Y-%m-%d %H:%M'):
-    """تحويل datetime لـ string بأمان"""
     if dt is None:
         return '-'
     if isinstance(dt, str):
@@ -51,9 +45,6 @@ def format_datetime(dt, fmt='%Y-%m-%d %H:%M'):
         return str(dt)
 
 
-# ============================================================
-# ===== PostgreSQL Support =====
-# ============================================================
 if USE_POSTGRES:
     import psycopg2
     import psycopg2.extras
@@ -113,63 +104,39 @@ if USE_POSTGRES:
         def _translate_query(self, query):
             """تحويل استعلامات SQLite لـ PostgreSQL"""
 
-            # ✅ 1. تحويل "text" إلى 'text' (PostgreSQL بيعتبر "..." اسم عمود)
-            # نحوّل النصوص العربية اللي بين " " لـ ' '
+            # ✅ 1. معالجة date() و datetime() بـ double quotes الأول
+            # date("now", "-1 day") → (CURRENT_DATE - INTERVAL '1 day')
+            query = re.sub(
+                r"date\(\s*[\"']now[\"']\s*,\s*[\"']-(\d+)\s+days?[\"']\s*\)",
+                r"(CURRENT_DATE - INTERVAL '\1 days')",
+                query
+            )
+            
+            # date("now", "+N days")
+            query = re.sub(
+                r"date\(\s*[\"']now[\"']\s*,\s*[\"']\+?(\d+)\s+days?[\"']\s*\)",
+                r"(CURRENT_DATE + INTERVAL '\1 days')",
+                query
+            )
+            
+            # date("now") بدون إضافات
+            query = re.sub(
+                r"date\(\s*[\"']now[\"']\s*\)",
+                r"CURRENT_DATE",
+                query
+            )
+            
+            # datetime("now") → NOW()
+            query = re.sub(
+                r"datetime\(\s*[\"']now[\"']\s*\)",
+                r"NOW()",
+                query
+            )
+
+            # ✅ 2. تحويل "text" إلى 'text' (النصوص العربية)
             query = re.sub(r'"([^"]*[\u0600-\u06FF]+[^"]*)"', r"'\1'", query)
 
-            # ✅ 2. تحويل "status_text" المشابهة (نصوص إنجليزية قصيرة)
-            # نحوّل "نشط" (اللي ممكن تكون بالإنجليزي) بس بنسيب أسماء الأعمدة
-            # نحول النصوص اللي مش أسماء أعمدة معروفة
-            known_columns = [
-                'id', 'name', 'username', 'email', 'role', 'status', 'priority',
-                'title', 'description', 'created_at', 'updated_at', 'due_date',
-                'start_date', 'end_date', 'client_id', 'trainer_id', 'user_id',
-                'amount', 'paid_amount', 'contract_value', 'total_amount',
-                'payment_status', 'payment_date', 'payment_method', 'invoice_number',
-                'notes', 'phone', 'address', 'company_name', 'specialty',
-                'is_active', 'completion_percentage', 'task_group', 'meeting_id',
-                'estimated_duration', 'actual_duration', 'contract_payment_id',
-                'assigned_user_id', 'created_by', 'module_id', 'installment_number',
-                'file_name', 'file_path', 'file_size', 'file_type', 'uploaded_by',
-                'contract_id', 'module_type_id', 'client_id', 'is_read', 'message',
-                'task_id', 'action', 'details', 'ip_address', 'attempt_time',
-                'success', 'resource', 'permission_id', 'role_id', 'granted_by',
-                'user_id', 'is_default', 'due_date', 'paid_date', 'reminder_time',
-                'sent', 'duration', 'location', 'meeting_link', 'reminder_sent',
-                'notes', 'description', 'due_date', 'payment_method', 'amount',
-            ]
-
-            def replace_double_quotes(match):
-                content = match.group(1)
-                # لو المحتوى اسم عمود معروف، سيب الـ double quotes
-                if content.lower() in known_columns:
-                    return match.group(0)
-                # لو فيه عربي، حوّل
-                if re.search(r'[\u0600-\u06FF]', content):
-                    return f"'{content}'"
-                # لو نص طويل (زي جملة)، حوّل
-                if len(content) > 15:
-                    return f"'{content}'"
-                # غير كده، سيبه
-                return match.group(0)
-
-            query = re.sub(r'"([^"]+)"', replace_double_quotes, query)
-
-            # ✅ 3. دوال التاريخ
-            query = re.sub(r"date\(['\"]now['\"]\)", "CURRENT_DATE", query)
-            query = re.sub(r"datetime\(['\"]now['\"]\)", "NOW()", query)
-
-            query = re.sub(
-                r"date\(['\"]now['\"],\s*['\"]-(\d+)\s+days['\"]\)",
-                r"CURRENT_DATE - INTERVAL '\1 days'",
-                query
-            )
-            query = re.sub(
-                r"date\(['\"]now['\"],\s*['\"]\+?(\d+)\s+days['\"]\)",
-                r"CURRENT_DATE + INTERVAL '\1 days'",
-                query
-            )
-
+            # ✅ 3. strftime
             query = re.sub(
                 r"strftime\(['\"]%Y-%m['\"],\s*([^)]+)\)",
                 r"TO_CHAR(\1, 'YYYY-MM')",
@@ -271,9 +238,6 @@ if USE_POSTGRES:
             raise
 
 
-# ============================================================
-# ===== SQLite Support =====
-# ============================================================
 else:
     def get_db():
         os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
@@ -286,9 +250,6 @@ else:
         return conn
 
 
-# ============================================================
-# ===== Password Functions =====
-# ============================================================
 def hash_password(password):
     if isinstance(password, str):
         password = password.encode('utf-8')
@@ -308,9 +269,6 @@ def verify_password(password, hashed):
         return hashlib.sha256(password.encode()).hexdigest() == hashed
 
 
-# ============================================================
-# ===== Permissions =====
-# ============================================================
 def get_user_permissions(user_id):
     conn = get_db()
     cursor = conn.cursor()
@@ -385,9 +343,6 @@ def remove_permission_from_user(user_id, permission_name):
     conn.close()
 
 
-# ============================================================
-# ===== Init DB =====
-# ============================================================
 def init_db():
     if USE_POSTGRES:
         _init_postgres()
@@ -542,7 +497,6 @@ def _init_postgres():
 
     conn.commit()
 
-    # ===== الصلاحيات =====
     default_permissions = [
         ('tasks.view', 'tasks', 'view', 'عرض المهام'),
         ('tasks.create', 'tasks', 'create', 'إنشاء مهام'),
@@ -723,7 +677,6 @@ def _init_postgres():
 
 
 def _init_sqlite():
-    """تهيئة SQLite - نفس الكود القديم"""
     conn = get_db()
     cursor = conn.cursor()
 
@@ -852,7 +805,6 @@ def _init_sqlite():
     print(f"✅ SQLite initialized at {DB_PATH}")
 
 
-# ===== استدعاء التهيئة =====
 try:
     init_db()
 except Exception as e:
