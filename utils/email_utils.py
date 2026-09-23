@@ -1,87 +1,68 @@
 # utils/email_utils.py
 """
-أدوات إرسال الإيميلات - Non-Blocking + Multi-Port Fallback
+أدوات إرسال الإيميلات - SendGrid HTTP API (Non-Blocking)
 """
 import threading
-import smtplib
-import ssl
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 
 
-def _send_via_smtp(smtp_server, port, username, password, use_tls, use_ssl, 
-                   to_email, subject, body_html):
-    """إرسال إيميل عبر SMTP مباشرة"""
-    
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = subject
-    msg['From'] = username
-    msg['To'] = to_email
-    
-    # Plain text + HTML
-    part_text = MIMEText(body_html, 'plain', 'utf-8')
-    part_html = MIMEText(body_html, 'html', 'utf-8')
-    msg.attach(part_text)
-    msg.attach(part_html)
-    
-    # ✅ محاولة الاتصال
-    if use_ssl:
-        # SSL مباشرة (بورت 465)
-        context = ssl.create_default_context()
-        with smtplib.SMTP_SSL(smtp_server, port, context=context, timeout=10) as server:
-            server.login(username, password)
-            server.send_message(msg)
-    else:
-        # STARTTLS (بورت 587)
-        with smtplib.SMTP(smtp_server, port, timeout=10) as server:
-            server.ehlo()
-            if use_tls:
-                server.starttls(context=ssl.create_default_context())
-                server.ehlo()
-            server.login(username, password)
-            server.send_message(msg)
-    
-    return True
+def _send_via_sendgrid(api_key, from_email, from_name, to_email, subject, body_html):
+    """إرسال إيميل عبر SendGrid API"""
+    try:
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail
+        
+        message = Mail(
+            from_email=(from_email, from_name),
+            to_emails=to_email,
+            subject=subject,
+            html_content=body_html
+        )
+        
+        sg = SendGridAPIClient(api_key)
+        response = sg.send(message)
+        
+        if response.status_code in [200, 201, 202]:
+            return True
+        else:
+            print(f"⚠️ SendGrid status: {response.status_code}")
+            return False
+    except Exception as e:
+        print(f"⚠️ SendGrid error: {e}")
+        return False
 
 
 def _send_email_worker(app, to, subject, body_html):
     """Worker بيشتغل في Thread منفصل"""
     try:
         with app.app_context():
-            smtp_server = app.config['MAIL_SERVER']
-            username = app.config['MAIL_USERNAME']
-            password = app.config['MAIL_PASSWORD']
+            api_key = app.config.get('SENDGRID_API_KEY', '')
+            from_email = app.config.get('MAIL_DEFAULT_SENDER', '') or app.config.get('MAIL_USERNAME', '')
+            from_name = app.config.get('COMPANY_NAME', 'NQ')
             
-            # ✅ قائمة ports للتجربة
-            ports_to_try = [
-                (587, True, False),   # STARTTLS
-                (465, False, True),   # SSL
-                (2525, True, False),  # بديل (SendGrid, Mailgun)
-                (25, False, False),   # Plain
-            ]
+            if not api_key:
+                print("⚠️ SENDGRID_API_KEY غير موجود")
+                return False
             
-            last_error = None
+            if not from_email:
+                print("⚠️ MAIL_DEFAULT_SENDER غير موجود")
+                return False
             
-            for port, use_tls, use_ssl in ports_to_try:
-                try:
-                    print(f"📤 محاولة إرسال عبر {smtp_server}:{port}...")
-                    _send_via_smtp(
-                        smtp_server, port, username, password,
-                        use_tls, use_ssl, to, subject, body_html
-                    )
-                    print(f"✅ تم إرسال إيميل إلى {to} عبر البورت {port}")
-                    return True
-                except Exception as e:
-                    print(f"⚠️ فشل البورت {port}: {e}")
-                    last_error = e
-                    continue
+            print(f"📤 إرسال عبر SendGrid إلى {to}...")
             
-            print(f"❌ فشل إرسال إيميل إلى {to} على كل البورتات: {last_error}")
-            return False
+            success = _send_via_sendgrid(
+                api_key, from_email, from_name,
+                to, subject, body_html
+            )
             
+            if success:
+                print(f"✅ تم إرسال إيميل إلى {to}")
+            else:
+                print(f"❌ فشل إرسال إيميل إلى {to}")
+            
+            return success
     except Exception as e:
-        print(f"❌ خطأ عام في _send_email_worker: {e}")
+        print(f"❌ خطأ عام: {e}")
         return False
 
 
@@ -94,16 +75,14 @@ def send_email(to, subject, body_html, body_text=None):
         from flask import current_app
         app = current_app._get_current_object()
         
-        # ✅ تحقق من وجود إعدادات
-        if not app.config.get('MAIL_USERNAME'):
-            print(f"⚠️ MAIL_USERNAME غير موجود — تخطي الإيميل")
+        if not app.config.get('SENDGRID_API_KEY'):
+            print(f"⚠️ SENDGRID_API_KEY غير موجود — تخطي الإيميل")
             return False
         
         if app.config.get('MAIL_SUPPRESS_SEND'):
             print(f"⚠️ الإيميل معطل — تخطي")
             return False
         
-        # ✅ إرسال في Thread منفصل
         thread = threading.Thread(
             target=_send_email_worker,
             args=(app, to, subject, body_html),
