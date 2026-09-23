@@ -245,6 +245,69 @@ def index():
     total_tasks = stats['tasks']
     completion_rate = round((tasks_by_status['completed'] / total_tasks * 100), 1) if total_tasks > 0 else 0
     
+    # ============================================================
+    # ===== بيانات الرسوم البيانية (Charts) =====
+    # ============================================================
+    
+    # 1. إيرادات آخر 6 شهور
+    try:
+        monthly_revenue_data = conn.execute('''
+            SELECT 
+                TO_CHAR(payment_date, 'YYYY-MM') as month,
+                SUM(amount) as total
+            FROM client_payments
+            WHERE status = 'مدفوع'
+            AND payment_date >= CURRENT_DATE - INTERVAL '6 months'
+            GROUP BY TO_CHAR(payment_date, 'YYYY-MM')
+            ORDER BY month ASC
+        ''').fetchall()
+        
+        chart_months = [row['month'] for row in monthly_revenue_data]
+        chart_revenues = [float(row['total'] or 0) for row in monthly_revenue_data]
+    except Exception as e:
+        print(f"⚠️ خطأ في بيانات الإيرادات الشهرية: {e}")
+        chart_months = []
+        chart_revenues = []
+    
+    # 2. توزيع المهام
+    chart_tasks = [
+        tasks_by_status['completed'],
+        tasks_by_status['in_progress'],
+        tasks_by_status['overdue'],
+        tasks_by_status['not_started']
+    ]
+    
+    # 3. توزيع العقود
+    chart_contracts = [
+        contracts_by_status['active'],
+        contracts_by_status['pending'],
+        contracts_by_status['completed']
+    ]
+    
+    # 4. أداء المدربين (آخر 5)
+    try:
+        trainers_perf = conn.execute('''
+            SELECT t.name,
+                   COUNT(DISTINCT ct.client_id) as clients_count,
+                   COUNT(DISTINCT tk.id) as tasks_count
+            FROM trainers t
+            LEFT JOIN client_trainers ct ON t.id = ct.trainer_id
+            LEFT JOIN clients c ON ct.client_id = c.id
+            LEFT JOIN tasks tk ON c.id = tk.client_id
+            GROUP BY t.id, t.name
+            ORDER BY tasks_count DESC
+            LIMIT 5
+        ''').fetchall()
+        
+        chart_trainer_names = [row['name'] for row in trainers_perf]
+        chart_trainer_tasks = [int(row['tasks_count'] or 0) for row in trainers_perf]
+        chart_trainer_clients = [int(row['clients_count'] or 0) for row in trainers_perf]
+    except Exception as e:
+        print(f"⚠️ خطأ في أداء المدربين: {e}")
+        chart_trainer_names = []
+        chart_trainer_tasks = []
+        chart_trainer_clients = []
+    
     conn.close()
     settings = get_company_settings()
     
@@ -261,7 +324,15 @@ def index():
                          monthly_revenue=monthly_revenue,
                          completion_rate=completion_rate,
                          settings=settings,
-                         datetime=datetime)
+                         datetime=datetime,
+                         # بيانات الرسوم البيانية
+                         chart_months=chart_months,
+                         chart_revenues=chart_revenues,
+                         chart_tasks=chart_tasks,
+                         chart_contracts=chart_contracts,
+                         chart_trainer_names=chart_trainer_names,
+                         chart_trainer_tasks=chart_trainer_tasks,
+                         chart_trainer_clients=chart_trainer_clients)
 
 
 # ============================================================
