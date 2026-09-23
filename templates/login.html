@@ -14,7 +14,6 @@
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             background: linear-gradient(135deg, #1a237e 0%, #0d47a1 50%, #1565c0 100%);
             min-height: 100vh;
@@ -24,196 +23,100 @@
             padding: 20px;
             margin: 0;
         }
-
         .login-container {
             width: 100%;
             max-width: 420px;
             text-align: center;
         }
-
         .login-card {
             background: white;
             border-radius: 24px;
             padding: 45px 40px;
             width: 100%;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-
-            .login-card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 30px 80px rgba(0,0,0,0.4);
-            }
-
-            .login-card .brand {
-                text-align: center;
-                margin-bottom: 30px;
-            }
-
-                .login-card .brand .logo {
-                    max-width: 120px;
-                    max-height: 120px;
-                    margin-bottom: 15px;
-                    border-radius: 16px;
-                    object-fit: contain;
-                    display: inline-block;
-                }
-
-                .login-card .brand h2 {
-                    color: #1a237e;
-                    font-weight: 800;
-                    font-size: 24px;
-                    margin-bottom: 5px;
-                }
-
-                .login-card .brand small {
-                    color: #666;
-                    font-size: 13px;
-                }
-
-            .login-card .form-group {
-                text-align: {
-                    % if get_lang() == 'ar' %
-                }
-
-                right {
-                    % else %
-                }
-
-                left {
-                    % endif %
-                }
-
-                ;
-                margin-bottom: 20px;
-            }
-
-            .login-card .form-label {
-                font-weight: 600;
-                color: #333;
-                display: block;
-
-                text-align: {
-                    % if get_lang() == 'ar' %
-                }
-
-                right {
-                    % else %
-                }
-
-                left {
-                    % endif %
-                }
-
-                ;
-                margin-bottom: 8px;
-                font-size: 14px;
-            }
-
-                .login-card .form-label i {
-                    margin- {
-                        % if get_lang() == 'ar' %
-                    }
-
-                    left {
-                        % else %
-                    }
-
-                    right {
-                        % endif %
-                    }
-
-                    : 6px;
-                    color: #1a237e;
-                }
-
-            .login-card .form-control {
-                border-radius: 12px;
-                padding: 12px 16px;
-                border: 2px solid #e0e0e0;
-                transition: all 0.3s ease;
-                width: 100%;
-
-                text-align: {
-                    % if get_lang() == 'ar' %
-                }
-
-                right {
-                    % else %
-                }
-
-                left {
-                    % endif %
-                }
-
-                ;
-            }
-
-                .login-card .form-control:focus {
-                    border-color: #1a237e;
-                    box-shadow: 0 0 0 4px rgba(26, 35, 126, 0.1);
-                    outline: none;
-                }
-
-            .login-card .btn-login {
-                background: linear-gradient(135deg, #1a237e, #0d47a1);
-                color: white;
-                border: none;
-                border-radius: 12px;
-                padding: 14px;
-                font-weight: 700;
-                font-size: 16px;
-                transition: all 0.3s ease;
-                width: 100%;
-                cursor: pointer;
-            }
-
-                .login-card .btn-login:hover {
-                    transform: translateY(-3px);
-                    box-shadow: 0 10px 30px rgba(26, 35, 126, 0.35);
-                }
-
-                .login-card .btn-login i {
-                    margin- {
-                        % if get_lang() == 'ar' %
-                    }
-
-                    left {
-                        % else %
-                    }
-
-                    right {
-                        % endif %
-                    }
-
-                    : 8px;
-                }
-
-        /* ===== زر تغيير اللغة ===== */
+        .login-card .brand {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .login-card .brand .logo {
+            max-width: 120px;
+            max-height: 120px;
+            margin-bottom: 15px;
+            border-radius: 16px;
+            object-fit: contain;
+            display: inline-block;
+        }
+        .login-card .brand h2 {
+            color: #1a237e;
+            font-weight: 800;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        .login-card .brand small {
+            color: #666;
+            font-size: 13px;
+        }
+        .login-card .form-group {
+            margin-bottom: 20px;
+        }
+        .login-card .form-label {
+            font-weight: 600;
+            color: #333;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .login-card .form-label i {
+            margin-{% if get_lang() == 'ar' %}left{% else %}right{% endif %}: 6px;
+            color: #1a237e;
+        }
+        .login-card .form-control {
+            border-radius: 12px;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            width: 100%;
+        }
+        .login-card .form-control:focus {
+            border-color: #1a237e;
+            box-shadow: 0 0 0 4px rgba(26, 35, 126, 0.1);
+            outline: none;
+        }
+        .login-card .btn-login {
+            background: linear-gradient(135deg, #1a237e, #0d47a1);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            font-weight: 700;
+            font-size: 16px;
+            width: 100%;
+            cursor: pointer;
+        }
+        .login-card .btn-login:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(26, 35, 126, 0.35);
+        }
         .lang-switch {
             text-align: center;
             margin-bottom: 20px;
         }
-
-            .lang-switch a {
-                display: inline-block;
-                padding: 6px 14px;
-                margin: 0 4px;
-                border-radius: 20px;
-                text-decoration: none;
-                font-size: 13px;
-                font-weight: 600;
-                transition: all 0.3s ease;
-                background: #f0f0f0;
-                color: #333;
-            }
-
-                .lang-switch a.active,
-                .lang-switch a:hover {
-                    background: #1a237e;
-                    color: white;
-                }
-
+        .lang-switch a {
+            display: inline-block;
+            padding: 6px 14px;
+            margin: 0 4px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            background: #f0f0f0;
+            color: #333;
+        }
+        .lang-switch a.active,
+        .lang-switch a:hover {
+            background: #1a237e;
+            color: white;
+        }
         .company-info {
             text-align: center;
             color: rgba(255, 255, 255, 0.85);
@@ -222,54 +125,23 @@
             padding: 15px;
             background: rgba(255, 255, 255, 0.08);
             border-radius: 12px;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
         }
-
-            .company-info:hover {
-                background: rgba(255, 255, 255, 0.15);
-                transform: scale(1.02);
-            }
-
-            .company-info i {
-                margin: 0 5px;
-                color: #ffc107;
-            }
-
+        .company-info i {
+            margin: 0 5px;
+            color: #ffc107;
+        }
         .version {
             text-align: center;
             color: rgba(255, 255, 255, 0.4);
             margin-top: 10px;
             font-size: 12px;
         }
-
         .alert {
             border-radius: 12px;
-
-            text-align: {
-                % if get_lang() == 'ar' %
-            }
-
-            right {
-                % else %
-            }
-
-            left {
-                % endif %
-            }
-
-            ;
         }
-
         @media (max-width: 480px) {
-            .login-card {
-                padding: 30px 20px;
-            }
-
-                .login-card .brand .logo {
-                    max-width: 80px;
-                    max-height: 80px;
-                }
+            .login-card { padding: 30px 20px; }
+            .login-card .brand .logo { max-width: 80px; max-height: 80px; }
         }
     </style>
 </head>
@@ -284,8 +156,8 @@
 
             <div class="brand">
                 {% if settings and settings.logo_path %}
-                <img src="{{ url_for('static', filename=settings.logo_path) }}"
-                     alt="{{ settings.name }}"
+                <img src="{{ url_for('static', filename=settings.logo_path) }}" 
+                     alt="{{ settings.name }}" 
                      class="logo">
                 {% else %}
                 <i class="bi bi-building" style="font-size: 64px; color: #1a237e; display: block; text-align: center;"></i>
@@ -295,14 +167,14 @@
             </div>
 
             {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            {% for category, message in messages %}
-            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            {% endfor %}
-            {% endif %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
             {% endwith %}
 
             <form method="POST">

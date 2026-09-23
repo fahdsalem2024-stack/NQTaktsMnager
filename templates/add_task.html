@@ -5,102 +5,96 @@
     <div class="col-lg-8">
         <div class="card shadow-lg border-0 rounded-4">
             <div class="card-header bg-gradient-primary text-white rounded-top-4 py-3">
-                <h4 class="mb-0"><i class="bi bi-plus-circle me-2"></i> إضافة تدريب جديد</h4>
+                <h4 class="mb-0"><i class="bi bi-plus-circle me-2"></i> {{ t('add_new_task') }}</h4>
             </div>
             <div class="card-body p-4">
                 <form method="POST" id="addTaskForm">
-                    
-                    <!-- ===== معلومات التدريب ===== -->
                     <div class="section-title">
-                        <i class="bi bi-info-circle me-2"></i> معلومات التدريب
+                        <i class="bi bi-info-circle me-2"></i> {{ t('task_info') }}
                     </div>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">العميل <span class="text-danger">*</span></label>
+                            <label class="form-label fw-bold">{{ t('client') }} <span class="text-danger">*</span></label>
                             <select name="client_id" class="form-select form-select-lg" required>
-                                <option value="">-- اختر العميل --</option>
+                                <option value="">{{ t('choose_client') }}</option>
                                 {% for client in clients %}
                                 <option value="{{ client.id }}">{{ client.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">المدرب المسؤول <span class="text-danger">*</span></label>
+                            <label class="form-label fw-bold">{{ t('responsible_trainer') }} <span class="text-danger">*</span></label>
                             <select name="assigned_to" class="form-select form-select-lg" required>
-                                <option value="">-- اختر المدرب --</option>
+                                <option value="">{{ t('choose_trainer') }}</option>
                                 {% for trainer in trainers %}
                                 <option value="{{ trainer.id }}">{{ trainer.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="col-12">
-                            <label class="form-label fw-bold">عنوان التدريب <span class="text-danger">*</span></label>
+                            <label class="form-label fw-bold">{{ t('task_title') }} <span class="text-danger">*</span></label>
                             <input type="text" name="title" class="form-control form-control-lg" required>
                         </div>
                         <div class="col-12">
-                            <label class="form-label fw-bold">الوصف</label>
+                            <label class="form-label fw-bold">{{ t('description') }}</label>
                             <textarea name="description" class="form-control" rows="2"></textarea>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">تاريخ التدريب <span class="text-danger">*</span></label>
+                            <label class="form-label fw-bold">{{ t('due_date') }} <span class="text-danger">*</span></label>
                             <input type="date" name="due_date" class="form-control form-control-lg" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">الأولوية</label>
+                            <label class="form-label fw-bold">{{ t('priority') }}</label>
                             <select name="priority" class="form-select form-select-lg">
-                                <option value="منخفضة">🟢 منخفضة</option>
-                                <option value="متوسطة" selected>🟡 متوسطة</option>
-                                <option value="عالية">🔴 عالية</option>
+                                <option value="منخفضة">🟢 {{ t('priority_low') }}</option>
+                                <option value="متوسطة" selected>🟡 {{ t('priority_medium') }}</option>
+                                <option value="عالية">🔴 {{ t('priority_high') }}</option>
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">الموعد</label>
+                            <label class="form-label fw-bold">{{ t('meeting') }}</label>
                             <select name="meeting_id" class="form-select form-select-lg">
-                                <option value="">بدون موعد</option>
+                                <option value="">{{ t('no_meeting') }}</option>
                                 {% for meeting in meetings %}
                                 <option value="{{ meeting.id }}">{{ meeting.title }} - {{ meeting.client_name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">مجموعة التدريب</label>
-                            <input type="text" name="task_group" class="form-control form-control-lg" placeholder="اسم المجموعة (اختياري)">
+                            <label class="form-label fw-bold">{{ t('task_group') }}</label>
+                            <input type="text" name="task_group" class="form-control form-control-lg" placeholder="{{ t('task_group_hint') }}">
                         </div>
                     </div>
 
                     <hr>
 
-                    <!-- ===== ربط الدفعة ===== -->
                     <div class="section-title">
-                        <i class="bi bi-link me-2"></i> ربط بدفعة عقد
+                        <i class="bi bi-link me-2"></i> {{ t('link_to_payment') }}
                     </div>
                     <div class="card border-0 mb-4" style="background: #fefce8;">
                         <div class="card-body">
                             <div class="mb-3">
-                                <label class="form-label fw-bold">اختر الدفعة المرتبطة بالتدريب</label>
+                                <label class="form-label fw-bold">{{ t('choose_payment') }}</label>
                                 <select name="contract_payment_id" class="form-select form-select-lg">
-                                    <option value="">-- بدون ربط --</option>
+                                    <option value="">{{ t('no_link') }}</option>
                                     {% for payment in available_payments %}
                                     <option value="{{ payment.id }}">
-                                        {{ payment.contract_number }} - دفعة {{ payment.installment_number }} 
-                                        ({{ payment.amount }} ر.س)
-                                        {% if payment.status == 'مستحقة' %}🟡 مستحقة{% endif %}
-                                        {% if payment.status == 'مدفوعة جزئيا' %}🟠 مدفوعة جزئياً{% endif %}
+                                        {{ payment.contract_number }} - {{ t('payment') }} {{ payment.installment_number }} 
+                                        ({{ payment.amount }} {{ t('currency') }})
                                     </option>
                                     {% endfor %}
                                 </select>
-                                <small class="text-muted">💡 عند اكتمال هذا التدريب، سيتم تفعيل الدفعة المختارة تلقائياً</small>
+                                <small class="text-muted">💡 {{ t('payment_link_hint') }}</small>
                             </div>
                         </div>
                     </div>
 
-                    <!-- ===== أزرار التحكم ===== -->
                     <div class="d-flex gap-2 mt-4">
                         <button type="submit" class="btn btn-success flex-grow-1 py-2">
-                            <i class="bi bi-check-circle me-2"></i> إضافة التدريب
+                            <i class="bi bi-check-circle me-2"></i> {{ t('add_task') }}
                         </button>
                         <a href="/tasks" class="btn btn-outline-secondary py-2">
-                            <i class="bi bi-arrow-right me-2"></i> رجوع
+                            <i class="bi bi-arrow-right me-2"></i> {{ t('back') }}
                         </a>
                     </div>
                 </form>
@@ -109,29 +103,8 @@
     </div>
 </div>
 
-<script>
-// إضافة تحقق من التاريخ
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('addTaskForm');
-    const dueDateInput = document.querySelector('input[name="due_date"]');
-    form.addEventListener('submit', function(e) {
-        const dueDate = new Date(dueDateInput.value);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (dueDate < today) {
-            if (!confirm('⚠️ التاريخ المحدد قد مضى. هل أنت متأكد من أنك تريد المتابعة؟')) {
-                e.preventDefault();
-                return;
-            }
-        }
-    });
-});
-</script>
-
 <style>
-.bg-gradient-primary {
-    background: linear-gradient(135deg, #1a237e, #0d47a1);
-}
+.bg-gradient-primary { background: linear-gradient(135deg, #1a237e, #0d47a1); }
 .section-title {
     font-size: 1.1rem;
     font-weight: 700;
@@ -144,30 +117,6 @@ document.addEventListener('DOMContentLoaded', function() {
     border-radius: 12px;
     padding: 12px 16px;
     border: 2px solid #e2e8f0;
-    transition: all 0.3s ease;
-}
-.form-control-lg:focus, .form-select-lg:focus {
-    border-color: #2563EB;
-    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.15);
-}
-.btn-success {
-    background: linear-gradient(135deg, #28a745, #20c997);
-    border: none;
-    border-radius: 12px;
-    transition: all 0.3s ease;
-}
-.btn-success:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
-}
-.btn-outline-secondary {
-    border-radius: 12px;
-    border: 2px solid #e2e8f0;
-    transition: all 0.3s ease;
-}
-.btn-outline-secondary:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.05);
 }
 </style>
 {% endblock %}
