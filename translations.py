@@ -221,6 +221,17 @@ translations = {
         'advanced_reports': 'تقارير متقدمة',
         'advanced_reports_desc': 'توقعات الإيرادات، أفضل العملاء، أداء المدربين',
         'contracts_count': 'العقود',
+        # ===== مدربين =====
+        'total_trainers': 'إجمالي المدربين',
+        'active_trainers': 'نشطين',
+        'total_linked_clients': 'إجمالي العملاء المرتبطين',
+        'search_trainers_placeholder': 'بحث باسم المدرب، التخصص، الهاتف...',
+        'add_trainer': 'إضافة مدرب',
+        'specialty': 'التخصص',
+        'client_count': 'عدد العملاء',
+        'status_inactive': 'غير نشط',
+        'confirm_delete_trainer': 'هل أنت متأكد من حذف هذا المدرب؟',
+        'trainer_singular': 'مدرب',
     },
 
     'en': {
@@ -441,6 +452,17 @@ translations = {
         'meetings_report_desc': 'View upcoming and past meetings',
         'advanced_reports': 'Advanced Reports',
         'advanced_reports_desc': 'Revenue forecasts, top clients, trainer performance',
+        # ===== Trainers =====
+        'total_trainers': 'Total Trainers',
+        'active_trainers': 'Active',
+        'total_linked_clients': 'Total Linked Clients',
+        'search_trainers_placeholder': 'Search by name, specialty, phone...',
+        'add_trainer': 'Add Trainer',
+        'specialty': 'Specialty',
+        'client_count': 'Client Count',
+        'status_inactive': 'Inactive',
+        'confirm_delete_trainer': 'Are you sure you want to delete this trainer?',
+        'trainer_singular': 'trainer',
     }
 }
 

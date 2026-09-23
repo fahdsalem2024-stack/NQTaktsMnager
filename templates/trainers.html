@@ -2,9 +2,9 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-person-badge"></i> المدربين</h2>
+    <h2><i class="bi bi-person-badge"></i> {{ t('trainers') }}</h2>
     <a href="/add_trainer" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> إضافة مدرب
+        <i class="bi bi-plus-circle"></i> {{ t('add_trainer') }}
     </a>
 </div>
 
@@ -13,19 +13,19 @@
     <div class="col-md-3">
         <div class="stat-card-mini bg-primary">
             <div class="stat-value">{{ trainers|length }}</div>
-            <div class="stat-label">إجمالي المدربين</div>
+            <div class="stat-label">{{ t('total_trainers') }}</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stat-card-mini bg-success">
             <div class="stat-value">{{ trainers|selectattr('is_active', 'equalto', 1)|list|length }}</div>
-            <div class="stat-label">نشطين</div>
+            <div class="stat-label">{{ t('active_trainers') }}</div>
         </div>
     </div>
     <div class="col-md-6">
         <div class="stat-card-mini bg-info">
             <div class="stat-value">{{ trainers|sum(attribute='client_count')|int }}</div>
-            <div class="stat-label">إجمالي العملاء المرتبطين</div>
+            <div class="stat-label">{{ t('total_linked_clients') }}</div>
         </div>
     </div>
 </div>
@@ -38,7 +38,7 @@
                 <div class="input-group">
                     <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
                     <input type="text" name="search" class="form-control border-start-0" 
-                           placeholder="بحث باسم المدرب، التخصص، الهاتف..." 
+                           placeholder="{{ t('search_trainers_placeholder') }}" 
                            value="{{ search or '' }}">
                 </div>
             </div>
@@ -46,17 +46,17 @@
                 <select name="per_page" class="form-select">
                     {% for opt in per_page_options %}
                     <option value="{{ opt }}" {% if per_page == opt %}selected{% endif %}>
-                        عرض {{ opt }}
+                        {{ t('show') }} {{ opt }}
                     </option>
                     {% endfor %}
                     <option value="999999" {% if per_page == 999999 %}selected{% endif %}>
-                        عرض الكل
+                        {{ t('show_all') }}
                     </option>
                 </select>
             </div>
             <div class="col-md-3">
                 <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-search"></i> بحث
+                    <i class="bi bi-search"></i> {{ t('search') }}
                 </button>
             </div>
         </form>
@@ -64,7 +64,7 @@
         <div class="mt-2">
             <small class="text-muted">
                 <a href="/trainers" class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-x-circle"></i> إلغاء البحث
+                    <i class="bi bi-x-circle"></i> {{ t('cancel_search') }}
                 </a>
             </small>
         </div>
@@ -81,13 +81,13 @@
                     <thead class="sticky-top bg-white">
                         <tr>
                             <th style="min-width: 50px;">#</th>
-                            <th style="min-width: 150px;">الاسم</th>
-                            <th style="min-width: 120px;">الهاتف</th>
-                            <th style="min-width: 150px;">البريد</th>
-                            <th style="min-width: 130px;">التخصص</th>
-                            <th style="min-width: 100px;">عدد العملاء</th>
-                            <th style="min-width: 80px;">الحالة</th>
-                            <th style="min-width: 160px;">إجراءات</th>
+                            <th style="min-width: 150px;">{{ t('name') }}</th>
+                            <th style="min-width: 120px;">{{ t('phone') }}</th>
+                            <th style="min-width: 150px;">{{ t('email') }}</th>
+                            <th style="min-width: 130px;">{{ t('specialty') }}</th>
+                            <th style="min-width: 100px;">{{ t('client_count') }}</th>
+                            <th style="min-width: 80px;">{{ t('status') }}</th>
+                            <th style="min-width: 160px;">{{ t('actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -105,20 +105,20 @@
                             <td><span class="badge bg-primary">{{ trainer.client_count or 0 }}</span></td>
                             <td>
                                 {% if trainer.is_active %}
-                                <span class="badge bg-success">نشط</span>
+                                <span class="badge bg-success">{{ t('status_active') }}</span>
                                 {% else %}
-                                <span class="badge bg-secondary">غير نشط</span>
+                                <span class="badge bg-secondary">{{ t('status_inactive') }}</span>
                                 {% endif %}
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <a href="/trainer/{{ trainer.id }}" class="btn btn-outline-primary" title="تفاصيل">
+                                    <a href="/trainer/{{ trainer.id }}" class="btn btn-outline-primary" title="{{ t('view') }}">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <a href="/edit_trainer/{{ trainer.id }}" class="btn btn-outline-info" title="تعديل">
+                                    <a href="/edit_trainer/{{ trainer.id }}" class="btn btn-outline-info" title="{{ t('edit') }}">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <button class="btn btn-outline-danger" onclick="deleteTrainer({{ trainer.id }})" title="حذف">
+                                    <button class="btn btn-outline-danger" onclick="deleteTrainer({{ trainer.id }})" title="{{ t('delete') }}">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
@@ -136,8 +136,8 @@
 <div class="row mt-4 align-items-center">
     <div class="col-md-6">
         <div class="text-muted small">
-            عرض {{ trainers|length }} من أصل {{ total }} مدرب
-            {% if search %} - نتائج البحث عن: "{{ search }}"{% endif %}
+            {{ t('showing') }} {{ trainers|length }} {{ t('of') }} {{ total }} {{ t('trainer_singular') }}
+            {% if search %} - {{ t('search_results_for') }}: "{{ search }}"{% endif %}
         </div>
     </div>
     <div class="col-md-6">
@@ -175,7 +175,7 @@
 
 <script>
 function deleteTrainer(trainerId) {
-    if (confirm('⚠️ هل أنت متأكد من حذف هذا المدرب؟\n\nهذا الإجراء لا يمكن التراجع عنه!')) {
+    if (confirm('⚠️ {{ t("confirm_delete_trainer") }}\n\n{{ t("action_cannot_be_undone") }}')) {
         var form = document.createElement('form');
         form.method = 'POST';
         form.action = '/delete_trainer/' + trainerId;
