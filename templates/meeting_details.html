@@ -6,35 +6,35 @@
     <div>
         <form method="POST" action="/update_meeting_status/{{ meeting.id }}" class="d-inline">
             <select name="status" class="form-select d-inline" style="width:auto;display:inline-block;" onchange="this.form.submit()">
-                <option value="مجدول" {% if meeting.status == 'مجدول' %}selected{% endif %}>مجدول</option>
-                <option value="تم" {% if meeting.status == 'تم' %}selected{% endif %}>تم</option>
-                <option value="ملغي" {% if meeting.status == 'ملغي' %}selected{% endif %}>ملغي</option>
+                <option value="مجدول" {% if meeting.status == 'مجدول' %}selected{% endif %}>{{ t('status_scheduled') }}</option>
+                <option value="تم" {% if meeting.status == 'تم' %}selected{% endif %}>{{ t('status_done') }}</option>
+                <option value="ملغي" {% if meeting.status == 'ملغي' %}selected{% endif %}>{{ t('status_cancelled') }}</option>
             </select>
         </form>
-        <a href="/meetings" class="btn btn-secondary">رجوع</a>
+        <a href="/meetings" class="btn btn-secondary">{{ t('back') }}</a>
     </div>
 </div>
 
 <div class="row">
     <div class="col-md-6">
         <div class="card">
-            <div class="card-header bg-info text-white">تفاصيل الموعد</div>
+            <div class="card-header bg-info text-white">{{ t('meeting_details') }}</div>
             <div class="card-body">
-                <p><strong><i class="bi bi-person"></i> العميل:</strong> {{ meeting.client_name }}</p>
-                <p><strong><i class="bi bi-telephone"></i> هاتف العميل:</strong> {{ meeting.client_phone or '-' }}</p>
-                <p><strong><i class="bi bi-envelope"></i> بريد العميل:</strong> {{ meeting.client_email or '-' }}</p>
-                <p><strong><i class="bi bi-clock"></i> التاريخ:</strong> {{ meeting.meeting_date }}</p>
-                <p><strong><i class="bi bi-hourglass-split"></i> المدة:</strong> {{ meeting.duration }} دقيقة</p>
-                {% if meeting.location %}<p><strong><i class="bi bi-geo-alt"></i> المكان:</strong> {{ meeting.location }}</p>{% endif %}
-                {% if meeting.meeting_link %}<p><strong><i class="bi bi-link"></i> الرابط:</strong> <a href="{{ meeting.meeting_link }}" target="_blank">{{ meeting.meeting_link }}</a></p>{% endif %}
-                <p><strong><i class="bi bi-person-gear"></i> أضيف بواسطة:</strong> {{ meeting.created_by_name }}</p>
-                <p><strong><i class="bi bi-tag"></i> الحالة:</strong> <span class="badge {% if meeting.status == 'مجدول' %}bg-primary{% elif meeting.status == 'تم' %}bg-success{% else %}bg-danger{% endif %}">{{ meeting.status }}</span></p>
+                <p><strong><i class="bi bi-person"></i> {{ t('client') }}:</strong> {{ meeting.client_name }}</p>
+                <p><strong><i class="bi bi-telephone"></i> {{ t('client_phone') }}:</strong> {{ meeting.client_phone or '-' }}</p>
+                <p><strong><i class="bi bi-envelope"></i> {{ t('client_email') }}:</strong> {{ meeting.client_email or '-' }}</p>
+                <p><strong><i class="bi bi-clock"></i> {{ t('date') }}:</strong> {{ meeting.meeting_date }}</p>
+                <p><strong><i class="bi bi-hourglass-split"></i> {{ t('duration') }}:</strong> {{ meeting.duration }} {{ t('minutes') }}</p>
+                {% if meeting.location %}<p><strong><i class="bi bi-geo-alt"></i> {{ t('location') }}:</strong> {{ meeting.location }}</p>{% endif %}
+                {% if meeting.meeting_link %}<p><strong><i class="bi bi-link"></i> {{ t('link') }}:</strong> <a href="{{ meeting.meeting_link }}" target="_blank">{{ meeting.meeting_link }}</a></p>{% endif %}
+                <p><strong><i class="bi bi-person-gear"></i> {{ t('created_by') }}:</strong> {{ meeting.created_by_name }}</p>
+                <p><strong><i class="bi bi-tag"></i> {{ t('status') }}:</strong> <span class="badge {% if meeting.status == 'مجدول' %}bg-primary{% elif meeting.status == 'تم' %}bg-success{% else %}bg-danger{% endif %}">{{ meeting.status }}</span></p>
             </div>
         </div>
     </div>
     <div class="col-md-6">
         <div class="card">
-            <div class="card-header bg-primary text-white">المهام المرتبطة</div>
+            <div class="card-header bg-primary text-white">{{ t('linked_tasks') }}</div>
             <div class="card-body">
                 {% if tasks %}
                 <ul class="list-group">
@@ -46,7 +46,7 @@
                     {% endfor %}
                 </ul>
                 {% else %}
-                <p class="text-muted">لا توجد مهام مرتبطة بهذا الموعد</p>
+                <p class="text-muted">{{ t('no_linked_tasks') }}</p>
                 {% endif %}
             </div>
         </div>

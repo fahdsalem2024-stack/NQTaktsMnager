@@ -2,10 +2,10 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-file-text"></i> تفاصيل المهمة</h2>
+    <h2><i class="bi bi-file-text"></i> {{ t('task_details') }}</h2>
     <div>
-        <a href="/tasks" class="btn btn-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
-        <button onclick="window.print()" class="btn btn-primary"><i class="bi bi-printer"></i> طباعة</button>
+        <a href="/tasks" class="btn btn-secondary"><i class="bi bi-arrow-right"></i> {{ t('back') }}</a>
+        <button onclick="window.print()" class="btn btn-primary"><i class="bi bi-printer"></i> {{ t('print') }}</button>
     </div>
 </div>
 
@@ -18,76 +18,86 @@
             <div class="card-body">
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <strong><i class="bi bi-tag"></i> الحالة:</strong>
-                        <span class="badge {% if task.status == 'مكتملة' %}bg-success{% elif task.status == 'قيد التنفيذ' %}bg-warning text-dark{% elif task.status == 'متأخرة' %}bg-danger{% else %}bg-secondary{% endif %}">{{ task.status }}</span>
+                        <strong><i class="bi bi-tag"></i> {{ t('status') }}:</strong>
+                        <span class="badge {% if task.status == 'مكتملة' %}bg-success{% elif task.status == 'قيد التنفيذ' %}bg-warning text-dark{% elif task.status == 'متأخرة' %}bg-danger{% else %}bg-secondary{% endif %}">
+                            {% if task.status == 'مكتملة' %}{{ t('status_completed') }}
+                            {% elif task.status == 'قيد التنفيذ' %}{{ t('status_in_progress') }}
+                            {% elif task.status == 'متأخرة' %}{{ t('status_overdue') }}
+                            {% else %}{{ t('status_not_started') }}{% endif %}
+                        </span>
                     </div>
                     <div class="col-md-6">
-                        <strong><i class="bi bi-flag"></i> الأولوية:</strong>
-                        <span class="badge {% if task.priority == 'عالية' %}bg-danger{% elif task.priority == 'متوسطة' %}bg-warning text-dark{% else %}bg-success{% endif %}">{{ task.priority }}</span>
+                        <strong><i class="bi bi-flag"></i> {{ t('priority') }}:</strong>
+                        <span class="badge {% if task.priority == 'عالية' %}bg-danger{% elif task.priority == 'متوسطة' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                            {% if task.priority == 'عالية' %}{{ t('priority_high') }}
+                            {% elif task.priority == 'متوسطة' %}{{ t('priority_medium') }}
+                            {% else %}{{ t('priority_low') }}{% endif %}
+                        </span>
                     </div>
                 </div>
-                
+
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <strong><i class="bi bi-person"></i> العميل:</strong>
+                        <strong><i class="bi bi-person"></i> {{ t('client') }}:</strong>
                         <a href="/client_tasks/{{ task.client_id }}" class="text-decoration-none">{{ task.client_name }}</a>
                         {% if task.client_company %}<br><small class="text-muted">{{ task.client_company }}</small>{% endif %}
                     </div>
                     <div class="col-md-6">
-                        <strong><i class="bi bi-person-gear"></i> المسؤول:</strong>
+                        <strong><i class="bi bi-person-gear"></i> {{ t('assigned_to') }}:</strong>
                         {{ task.assigned_name }}<br><small class="text-muted">{{ task.assigned_email }}</small>
                     </div>
                 </div>
-                
+
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <strong><i class="bi bi-calendar"></i> تاريخ الاستحقاق:</strong>
+                        <strong><i class="bi bi-calendar"></i> {{ t('due_date') }}:</strong>
                         {{ task.due_date }}
                         {% if task.due_date < today.strftime('%Y-%m-%d') and task.status != 'مكتملة' %}
-                        <span class="text-danger"><i class="bi bi-exclamation-triangle"></i> متأخرة!</span>
+                        <span class="text-danger"><i class="bi bi-exclamation-triangle"></i> {{ t('task_overdue') }}!</span>
                         {% endif %}
                     </div>
                     <div class="col-md-6">
-                        <strong><i class="bi bi-clock"></i> المدة:</strong>
-                        متوقعة: {{ task.estimated_duration or 0 }} ساعة<br>فعلية: {{ task.actual_duration or 0 }} ساعة
+                        <strong><i class="bi bi-clock"></i> {{ t('duration') }}:</strong>
+                        {{ t('estimated') }}: {{ task.estimated_duration or 0 }} {{ t('hours') }}<br>
+                        {{ t('actual') }}: {{ task.actual_duration or 0 }} {{ t('hours') }}
                     </div>
                 </div>
-                
+
                 <div class="mb-3">
-                    <strong><i class="bi bi-folder"></i> المجموعة:</strong>
-                    {% if task.task_group %}<span class="badge bg-info">{{ task.task_group }}</span>{% else %}<span class="text-muted">بدون مجموعة</span>{% endif %}
+                    <strong><i class="bi bi-folder"></i> {{ t('task_group') }}:</strong>
+                    {% if task.task_group %}<span class="badge bg-info">{{ task.task_group }}</span>{% else %}<span class="text-muted">{{ t('no_group') }}</span>{% endif %}
                 </div>
-                
+
                 <div class="mb-3">
-                    <strong><i class="bi bi-percent"></i> نسبة الإنجاز:</strong>
+                    <strong><i class="bi bi-percent"></i> {{ t('completion') }}:</strong>
                     <div class="progress" style="height:30px;">
                         <div class="progress-bar {% if task.completion_percentage == 100 %}bg-success{% endif %}" 
                              role="progressbar" style="width:{{ task.completion_percentage }}%;">{{ task.completion_percentage }}%</div>
                     </div>
                 </div>
-                
+
                 <div class="mb-3">
-                    <strong><i class="bi bi-file-text"></i> الوصف:</strong>
-                    <p class="border p-3 rounded bg-light">{{ task.description or 'لا يوجد وصف' }}</p>
+                    <strong><i class="bi bi-file-text"></i> {{ t('description') }}:</strong>
+                    <p class="border p-3 rounded bg-light">{{ task.description or t('no_description') }}</p>
                 </div>
-                
+
                 <div class="card mt-3">
-                    <div class="card-header bg-info text-white"><i class="bi bi-person"></i> معلومات العميل</div>
+                    <div class="card-header bg-info text-white"><i class="bi bi-person"></i> {{ t('client_info') }}</div>
                     <div class="card-body">
-                        <p><strong>الاسم:</strong> {{ task.client_name }}</p>
-                        {% if task.client_phone %}<p><strong>الهاتف:</strong> {{ task.client_phone }}</p>{% endif %}
-                        {% if task.client_email %}<p><strong>البريد:</strong> {{ task.client_email }}</p>{% endif %}
-                        {% if task.client_address %}<p><strong>العنوان:</strong> {{ task.client_address }}</p>{% endif %}
-                        {% if task.client_company %}<p><strong>الشركة:</strong> {{ task.client_company }}</p>{% endif %}
+                        <p><strong>{{ t('name') }}:</strong> {{ task.client_name }}</p>
+                        {% if task.client_phone %}<p><strong>{{ t('phone') }}:</strong> {{ task.client_phone }}</p>{% endif %}
+                        {% if task.client_email %}<p><strong>{{ t('email') }}:</strong> {{ task.client_email }}</p>{% endif %}
+                        {% if task.client_address %}<p><strong>{{ t('address') }}:</strong> {{ task.client_address }}</p>{% endif %}
+                        {% if task.client_company %}<p><strong>{{ t('company') }}:</strong> {{ task.client_company }}</p>{% endif %}
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-4">
         <div class="card">
-            <div class="card-header bg-success text-white"><i class="bi bi-chat"></i> الملاحظات والملفات</div>
+            <div class="card-header bg-success text-white"><i class="bi bi-chat"></i> {{ t('notes_and_files') }}</div>
             <div class="card-body" style="max-height:500px;overflow-y:auto;">
                 {% if updates %}
                     {% for update in updates %}
@@ -96,25 +106,25 @@
                             <strong>{{ update.user_name }}</strong>
                             <small class="text-muted">{{ update.created_at[:16] if update.created_at else '' }}</small>
                         </div>
-                        <p class="mb-1">{{ update.note or 'لا يوجد نص' }}</p>
+                        <p class="mb-1">{{ update.note or t('no_text') }}</p>
                         {% if update.attachment_path %}
-                        <a href="/download/{{ update.id }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-paperclip"></i> تحميل الملف</a>
+                        <a href="/download/{{ update.id }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-paperclip"></i> {{ t('download_file') }}</a>
                         {% endif %}
                     </div>
                     {% endfor %}
                 {% else %}
-                <p class="text-muted text-center">لا توجد ملاحظات</p>
+                <p class="text-muted text-center">{{ t('no_notes') }}</p>
                 {% endif %}
             </div>
         </div>
-        
+
         <div class="card mt-3">
-            <div class="card-header bg-warning"><i class="bi bi-plus-circle"></i> إضافة ملاحظة</div>
+            <div class="card-header bg-warning"><i class="bi bi-plus-circle"></i> {{ t('add_note') }}</div>
             <div class="card-body">
                 <form method="POST" action="/add_note/{{ task.id }}" enctype="multipart/form-data">
-                    <div class="mb-2"><textarea name="note" class="form-control" rows="2" placeholder="اكتب ملاحظتك..."></textarea></div>
+                    <div class="mb-2"><textarea name="note" class="form-control" rows="2" placeholder="{{ t('write_note') }}"></textarea></div>
                     <div class="mb-2"><input type="file" name="attachment" class="form-control form-control-sm"></div>
-                    <button type="submit" class="btn btn-success w-100"><i class="bi bi-save"></i> إضافة</button>
+                    <button type="submit" class="btn btn-success w-100"><i class="bi bi-save"></i> {{ t('add') }}</button>
                 </form>
             </div>
         </div>
@@ -125,10 +135,10 @@
     <div class="col-12">
         <div class="card">
             <div class="card-body text-center">
-                <h5><i class="bi bi-download"></i> تصدير المهمة</h5>
-                <a href="/export_task_pdf/{{ task.id }}" class="btn btn-danger"><i class="bi bi-file-pdf"></i> تصدير PDF</a>
-                <a href="/export_task_excel/{{ task.id }}" class="btn btn-success"><i class="bi bi-file-excel"></i> تصدير Excel</a>
-                <button onclick="window.print()" class="btn btn-primary"><i class="bi bi-printer"></i> طباعة</button>
+                <h5><i class="bi bi-download"></i> {{ t('export_task') }}</h5>
+                <a href="/export_task_pdf/{{ task.id }}" class="btn btn-danger"><i class="bi bi-file-pdf"></i> {{ t('export_pdf') }}</a>
+                <a href="/export_task_excel/{{ task.id }}" class="btn btn-success"><i class="bi bi-file-excel"></i> {{ t('export_excel') }}</a>
+                <button onclick="window.print()" class="btn btn-primary"><i class="bi bi-printer"></i> {{ t('print') }}</button>
             </div>
         </div>
     </div>

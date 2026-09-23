@@ -1,57 +1,53 @@
 {% extends "base.html" %}
 
 {% block content %}
-
-<!-- ===== Header ===== -->
 <div class="page-header mb-4">
     <div>
         <h2 class="page-title">
             <i class="bi bi-building-gear text-primary"></i>
-            إعدادات الشركة
+            {{ t('company_settings') }}
         </h2>
-        <p class="text-muted mb-0">إدارة معلومات الشركة وإعدادات النظام</p>
+        <p class="text-muted mb-0">{{ t('company_settings_desc') }}</p>
     </div>
 </div>
 
 <div class="row g-4">
-
-    <!-- ===== معلومات الشركة ===== -->
     <div class="col-12">
         <div class="settings-card">
             <div class="settings-card-header">
                 <i class="bi bi-building text-primary"></i>
-                معلومات الشركة
+                {{ t('company_info') }}
             </div>
             <div class="settings-card-body">
                 <form method="POST">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label text-muted small">اسم الشركة (عربي) <span class="text-danger">*</span></label>
+                            <label class="form-label text-muted small">{{ t('company_name_ar') }} <span class="text-danger">*</span></label>
                             <input type="text" name="name" class="form-control" value="{{ settings.name }}" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label text-muted small">اسم الشركة (إنجليزي)</label>
+                            <label class="form-label text-muted small">{{ t('company_name_en') }}</label>
                             <input type="text" name="name_en" class="form-control" value="{{ settings.name_en or '' }}">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label text-muted small">الهاتف</label>
+                            <label class="form-label text-muted small">{{ t('phone') }}</label>
                             <input type="tel" name="phone" class="form-control" value="{{ settings.phone or '' }}">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label text-muted small">البريد الإلكتروني</label>
+                            <label class="form-label text-muted small">{{ t('email') }}</label>
                             <input type="email" name="email" class="form-control" value="{{ settings.email or '' }}">
                         </div>
                         <div class="col-12">
-                            <label class="form-label text-muted small">العنوان</label>
+                            <label class="form-label text-muted small">{{ t('address') }}</label>
                             <input type="text" name="address" class="form-control" value="{{ settings.address or '' }}">
                         </div>
                         <div class="col-12">
-                            <label class="form-label text-muted small">الموقع الإلكتروني</label>
+                            <label class="form-label text-muted small">{{ t('website') }}</label>
                             <input type="url" name="website" class="form-control" value="{{ settings.website or '' }}">
                         </div>
                         <div class="col-12">
                             <button type="submit" class="btn-save w-100">
-                                <i class="bi bi-save"></i> حفظ الإعدادات
+                                <i class="bi bi-save"></i> {{ t('save_settings') }}
                             </button>
                         </div>
                     </div>
@@ -60,35 +56,32 @@
         </div>
     </div>
 
-    <!-- ===== الشعار والأيقونة (جنباً لجنب) ===== -->
     <div class="col-md-6">
         <div class="settings-card h-100">
             <div class="settings-card-header">
                 <i class="bi bi-image text-info"></i>
-                شعار الشركة
+                {{ t('company_logo') }}
             </div>
             <div class="settings-card-body text-center">
                 <div class="logo-preview-container">
                     {% if settings and settings.logo_path %}
-                    <img src="{{ url_for('static', filename=settings.logo_path) }}" 
-                         alt="شعار الشركة" 
-                         class="logo-preview">
+                    <img src="{{ url_for('static', filename=settings.logo_path) }}" alt="{{ t('company_logo') }}" class="logo-preview">
                     {% else %}
                     <div class="logo-placeholder">
                         <i class="bi bi-image"></i>
-                        <span>شعار الشركة</span>
+                        <span>{{ t('company_logo') }}</span>
                     </div>
                     {% endif %}
                 </div>
                 <form method="POST" action="/upload_logo" enctype="multipart/form-data" class="mt-3">
-                    <div class="upload-area" id="logoUploadArea">
+                    <div class="upload-area">
                         <i class="bi bi-cloud-upload"></i>
-                        <p>اسحب الشعار هنا أو اضغط للاختيار</p>
+                        <p>{{ t('drag_drop_hint') }}</p>
                         <input type="file" name="logo" class="upload-input" accept="image/*" required>
                         <small class="text-muted">PNG, JPG, SVG - 200x200</small>
                     </div>
                     <button type="submit" class="btn btn-primary w-100 mt-2">
-                        <i class="bi bi-upload"></i> رفع الشعار
+                        <i class="bi bi-upload"></i> {{ t('upload_logo') }}
                     </button>
                 </form>
             </div>
@@ -99,15 +92,12 @@
         <div class="settings-card h-100">
             <div class="settings-card-header">
                 <i class="bi bi-globe2 text-warning"></i>
-                أيقونة الموقع
+                {{ t('site_icon') }}
             </div>
             <div class="settings-card-body text-center">
                 <div class="favicon-preview-container">
                     {% if settings and settings.favicon_path %}
-                    <img src="{{ url_for('static', filename=settings.favicon_path) }}" 
-                         alt="أيقونة الموقع" 
-                         class="favicon-preview">
-                    <span class="favicon-label">PNG / ICO</span>
+                    <img src="{{ url_for('static', filename=settings.favicon_path) }}" alt="{{ t('site_icon') }}" class="favicon-preview">
                     {% else %}
                     <div class="favicon-placeholder">
                         <i class="bi bi-image"></i>
@@ -116,65 +106,64 @@
                     {% endif %}
                 </div>
                 <form method="POST" action="/upload_favicon" enctype="multipart/form-data" class="mt-3">
-                    <div class="upload-area" id="faviconUploadArea">
+                    <div class="upload-area">
                         <i class="bi bi-cloud-upload"></i>
-                        <p>اسحب الأيقونة هنا أو اضغط للاختيار</p>
+                        <p>{{ t('drag_drop_hint') }}</p>
                         <input type="file" name="favicon" class="upload-input" accept="image/*" required>
-                        <small class="text-muted">PNG, ICO - 32x32 أو 64x64</small>
+                        <small class="text-muted">PNG, ICO - 32x32</small>
                     </div>
                     <button type="submit" class="btn btn-warning w-100 mt-2">
-                        <i class="bi bi-upload"></i> رفع الأيقونة
+                        <i class="bi bi-upload"></i> {{ t('upload_icon') }}
                     </button>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- ===== النسخ الاحتياطي ===== -->
     <div class="col-12">
         <div class="settings-card">
             <div class="settings-card-header">
                 <i class="bi bi-database text-success"></i>
-                النسخ الاحتياطي واستعادة البيانات
+                {{ t('backup_restore') }}
             </div>
             <div class="settings-card-body">
                 <div class="row g-3">
                     <div class="col-md-4">
                         <a href="/backup_database" class="backup-card">
                             <div class="backup-icon"><i class="bi bi-download"></i></div>
-                            <div class="backup-label">إنشاء نسخة</div>
-                            <div class="backup-desc">نسخ احتياطي فوري</div>
+                            <div class="backup-label">{{ t('create_backup') }}</div>
+                            <div class="backup-desc">{{ t('instant_backup') }}</div>
                         </a>
                     </div>
                     <div class="col-md-4">
                         <a href="/download_backup" class="backup-card">
                             <div class="backup-icon"><i class="bi bi-folder2-open"></i></div>
-                            <div class="backup-label">تحميل نسخة</div>
-                            <div class="backup-desc">آخر نسخة محفوظة</div>
+                            <div class="backup-label">{{ t('download_backup') }}</div>
+                            <div class="backup-desc">{{ t('last_backup') }}</div>
                         </a>
                     </div>
                     <div class="col-md-4">
                         <button class="backup-card" data-bs-toggle="collapse" data-bs-target="#restoreSection">
                             <div class="backup-icon"><i class="bi bi-arrow-counterclockwise"></i></div>
-                            <div class="backup-label">استعادة</div>
-                            <div class="backup-desc">استعادة من نسخة</div>
+                            <div class="backup-label">{{ t('restore') }}</div>
+                            <div class="backup-desc">{{ t('restore_from_backup') }}</div>
                         </button>
                     </div>
                 </div>
                 <div class="collapse mt-3" id="restoreSection">
                     <div class="alert alert-warning">
                         <i class="bi bi-exclamation-triangle"></i>
-                        <strong>تحذير:</strong> استعادة البيانات ستحل محل البيانات الحالية بالكامل.
+                        <strong>{{ t('warning') }}:</strong> {{ t('restore_warning') }}
                     </div>
                     <form method="POST" action="/restore_backup" enctype="multipart/form-data">
                         <div class="row g-3">
                             <div class="col-md-8">
                                 <input type="file" name="backup_file" class="form-control" accept=".db,.sql,.zip" required>
-                                <small class="text-muted">الصيغ المدعومة: .db، .sql، .zip</small>
+                                <small class="text-muted">{{ t('supported_formats') }}</small>
                             </div>
                             <div class="col-md-4">
-                                <button type="submit" class="btn btn-danger w-100" onclick="return confirm('⚠️ تأكيد استعادة البيانات؟')">
-                                    <i class="bi bi-upload"></i> استعادة
+                                <button type="submit" class="btn btn-danger w-100" onclick="return confirm('{{ t('confirm_restore') }}')">
+                                    <i class="bi bi-upload"></i> {{ t('restore') }}
                                 </button>
                             </div>
                         </div>
@@ -184,103 +173,94 @@
         </div>
     </div>
 
-    <!-- ===== إعادة ضبط الترقيم ===== -->
     <div class="col-md-6">
         <div class="settings-card">
             <div class="settings-card-header">
                 <i class="bi bi-arrow-counterclockwise text-warning"></i>
-                إعادة ضبط الترقيم
+                {{ t('reset_sequence') }}
             </div>
             <div class="settings-card-body">
                 <div class="info-box">
                     <i class="bi bi-info-circle text-primary"></i>
                     <div>
-                        <strong>إعادة ضبط ترقيم الجداول</strong>
-                        <p class="mb-0 text-muted small">لن يتم حذف أي بيانات، فقط إعادة ضبط الأرقام التسلسلية</p>
+                        <strong>{{ t('reset_sequence') }}</strong>
+                        <p class="mb-0 text-muted small">{{ t('reset_sequence_desc') }}</p>
                     </div>
                 </div>
                 <form method="POST" action="/reset_sequence" class="mt-3">
-                    <button type="submit" class="btn btn-warning w-100" onclick="return confirm('⚠️ هل أنت متأكد من إعادة ضبط الترقيم؟')">
-                        <i class="bi bi-arrow-counterclockwise"></i> إعادة ضبط الترقيم
+                    <button type="submit" class="btn btn-warning w-100" onclick="return confirm('{{ t('confirm_reset') }}')">
+                        <i class="bi bi-arrow-counterclockwise"></i> {{ t('reset_sequence') }}
                     </button>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- ===== حذف البيانات (Danger Zone) ===== -->
     <div class="col-md-6">
         <div class="danger-zone">
             <div class="danger-zone-header">
                 <i class="bi bi-exclamation-triangle"></i>
-                منطقة خطرة
-                <span class="danger-badge">تحذير</span>
+                {{ t('danger_zone') }}
+                <span class="danger-badge">{{ t('warning') }}</span>
             </div>
             <div class="danger-zone-body">
-                <p class="text-muted small">كل العمليات هنا لا يمكن التراجع عنها</p>
+                <p class="text-muted small">{{ t('danger_zone_desc') }}</p>
                 <button class="btn btn-danger w-100" data-bs-toggle="modal" data-bs-target="#deleteAllDataModal">
-                    <i class="bi bi-trash3"></i> حذف جميع البيانات
+                    <i class="bi bi-trash3"></i> {{ t('delete_all_data') }}
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ===== مودال تأكيد مسح جميع البيانات ===== -->
 <div class="modal fade" id="deleteAllDataModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title"><i class="bi bi-exclamation-triangle"></i> ⚠️ تأكيد مسح جميع البيانات</h5>
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle"></i> {{ t('confirm_delete_all') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-danger">
-                    <strong>أنت على وشك حذف جميع البيانات!</strong>
+                    <strong>{{ t('about_to_delete') }}</strong>
                     <ul class="mt-2 mb-0">
-                        <li>العقود ودفعاتها</li>
-                        <li>العملاء</li>
-                        <li>المدفوعات</li>
-                        <li>المهام والتدريبات</li>
-                        <li>المدربين</li>
-                        <li>المواعيد</li>
-                        <li>المديولات</li>
-                        <li>الإشعارات</li>
-                        <li>سجل النشاطات</li>
+                        <li>{{ t('contracts_and_payments') }}</li>
+                        <li>{{ t('clients') }}</li>
+                        <li>{{ t('payments') }}</li>
+                        <li>{{ t('tasks') }}</li>
+                        <li>{{ t('trainers') }}</li>
+                        <li>{{ t('meetings') }}</li>
+                        <li>{{ t('modules') }}</li>
+                        <li>{{ t('notifications') }}</li>
+                        <li>{{ t('activity_log') }}</li>
                     </ul>
                 </div>
-                
                 <div class="mb-3">
                     <label class="form-label fw-bold">
-                        للتأكيد، اكتب <span class="text-danger">"تأكيد"</span> في الحقل أدناه:
+                        {{ t('to_confirm_type') }} <span class="text-danger">"{{ t('confirm_word') }}"</span> {{ t('in_field_below') }}:
                     </label>
-                    <input type="text" id="confirmDeleteInput" class="form-control" 
-                           placeholder="اكتب تأكيد هنا..." 
-                           oninput="toggleDeleteButton()">
+                    <input type="text" id="confirmDeleteInput" class="form-control" placeholder="{{ t('type_confirm_here') }}" oninput="toggleDeleteButton()">
                 </div>
-                
                 <form method="POST" action="/delete_all_data" id="deleteAllForm">
                     <input type="hidden" name="confirm_text" id="confirmText">
                     <button type="submit" id="confirmDeleteBtn" class="btn btn-danger w-100" disabled>
-                        <i class="bi bi-trash3"></i> نعم، احذف جميع البيانات
+                        <i class="bi bi-trash3"></i> {{ t('yes_delete_all') }}
                     </button>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('cancel') }}</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-// ===== تفعيل زر الحذف عند كتابة "تأكيد" =====
 function toggleDeleteButton() {
     var input = document.getElementById('confirmDeleteInput');
     var btn = document.getElementById('confirmDeleteBtn');
     var hiddenInput = document.getElementById('confirmText');
-    
-    if (input.value.trim() === 'تأكيد') {
+    if (input.value.trim() === '{{ t("confirm_word") }}') {
         btn.disabled = false;
         hiddenInput.value = input.value.trim();
     } else {
@@ -288,64 +268,9 @@ function toggleDeleteButton() {
         hiddenInput.value = '';
     }
 }
-
-// ===== Drag & Drop للشعار =====
-document.addEventListener('DOMContentLoaded', function() {
-    const logoArea = document.getElementById('logoUploadArea');
-    const faviconArea = document.getElementById('faviconUploadArea');
-    
-    [logoArea, faviconArea].forEach(area => {
-        if (!area) return;
-        
-        area.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            this.style.borderColor = '#2563EB';
-            this.style.background = '#EFF6FF';
-        });
-        
-        area.addEventListener('dragleave', function(e) {
-            e.preventDefault();
-            this.style.borderColor = '#E2E8F0';
-            this.style.background = 'transparent';
-        });
-        
-        area.addEventListener('drop', function(e) {
-            e.preventDefault();
-            this.style.borderColor = '#E2E8F0';
-            this.style.background = 'transparent';
-            
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                const input = this.querySelector('.upload-input');
-                if (input) {
-                    input.files = files;
-                    // عرض اسم الملف
-                    const label = this.querySelector('p');
-                    if (label) {
-                        label.textContent = '📄 ' + files[0].name;
-                        label.style.color = '#2563EB';
-                    }
-                }
-            }
-        });
-        
-        // عند اختيار ملف
-        const input = area.querySelector('.upload-input');
-        if (input) {
-            input.addEventListener('change', function() {
-                const label = area.querySelector('p');
-                if (label && this.files.length > 0) {
-                    label.textContent = '📄 ' + this.files[0].name;
-                    label.style.color = '#10B981';
-                }
-            });
-        }
-    });
-});
 </script>
 
 <style>
-/* ===== Header ===== */
 .page-header {
     display: flex;
     justify-content: space-between;
@@ -354,29 +279,14 @@ document.addEventListener('DOMContentLoaded', function() {
     padding-bottom: 16px;
     border-bottom: 2px solid #f1f5f9;
 }
-
-.page-title {
-    font-size: 1.75rem;
-    font-weight: 800;
-    color: #0F172A;
-    margin: 0;
-}
-
-/* ===== Settings Card ===== */
+.page-title { font-size: 1.75rem; font-weight: 800; color: #0F172A; margin: 0; }
 .settings-card {
     background: white;
     border: none;
     border-radius: 20px;
     box-shadow: 0 8px 30px rgba(0,0,0,0.05);
-    transition: all 0.3s ease;
     height: 100%;
 }
-
-.settings-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.08);
-}
-
 .settings-card-header {
     padding: 18px 24px;
     font-weight: 700;
@@ -387,36 +297,16 @@ document.addEventListener('DOMContentLoaded', function() {
     align-items: center;
     gap: 10px;
 }
-
-.settings-card-header i {
-    font-size: 1.3rem;
-}
-
-.settings-card-body {
-    padding: 24px;
-}
-
-/* ===== Form Controls ===== */
-.form-control,
-.form-select {
+.settings-card-body { padding: 24px; }
+.form-control, .form-select {
     height: 48px;
     border-radius: 12px;
     border: 1px solid #E2E8F0;
-    transition: all 0.3s ease;
 }
-
-.form-control:focus,
-.form-select:focus {
+.form-control:focus, .form-select:focus {
     box-shadow: 0 0 0 0.2rem rgba(37,99,235,0.15);
     border-color: #2563EB;
 }
-
-.form-label {
-    font-weight: 500;
-    color: #475569;
-}
-
-/* ===== Save Button ===== */
 .btn-save {
     height: 50px;
     border-radius: 12px;
@@ -425,23 +315,9 @@ document.addEventListener('DOMContentLoaded', function() {
     background: #2563EB;
     color: white;
     border: none;
-    transition: all 0.3s ease;
 }
-
-.btn-save:hover {
-    background: #1d4ed8;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(37,99,235,0.3);
-}
-
-/* ===== Logo Preview ===== */
-.logo-preview-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 16px;
-}
-
+.btn-save:hover { background: #1d4ed8; color: white; }
+.logo-preview-container { display: flex; justify-content: center; margin-bottom: 16px; }
 .logo-preview {
     width: 180px;
     height: 180px;
@@ -451,7 +327,6 @@ document.addEventListener('DOMContentLoaded', function() {
     padding: 20px;
     border: 2px solid #E2E8F0;
 }
-
 .logo-placeholder {
     width: 180px;
     height: 180px;
@@ -464,20 +339,7 @@ document.addEventListener('DOMContentLoaded', function() {
     justify-content: center;
     color: #94a3b8;
 }
-
-.logo-placeholder i {
-    font-size: 3rem;
-}
-
-/* ===== Favicon Preview ===== */
-.favicon-preview-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 16px;
-}
-
+.favicon-preview-container { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 16px; }
 .favicon-preview {
     width: 80px;
     height: 80px;
@@ -487,7 +349,6 @@ document.addEventListener('DOMContentLoaded', function() {
     object-fit: contain;
     background: #F8FAFC;
 }
-
 .favicon-placeholder {
     width: 80px;
     height: 80px;
@@ -500,50 +361,24 @@ document.addEventListener('DOMContentLoaded', function() {
     justify-content: center;
     color: #94a3b8;
 }
-
-.favicon-label {
-    font-size: 12px;
-    color: #94a3b8;
-}
-
-/* ===== Upload Area ===== */
 .upload-area {
     border: 2px dashed #E2E8F0;
     border-radius: 16px;
     padding: 20px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.3s ease;
     position: relative;
 }
-
-.upload-area:hover {
-    border-color: #2563EB;
-    background: #F8FAFC;
-}
-
+.upload-area:hover { border-color: #2563EB; background: #F8FAFC; }
 .upload-area .upload-input {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     opacity: 0;
     cursor: pointer;
 }
-
-.upload-area i {
-    font-size: 2rem;
-    color: #94a3b8;
-}
-
-.upload-area p {
-    margin: 8px 0 4px;
-    color: #64748b;
-    font-size: 14px;
-}
-
-/* ===== Backup Cards ===== */
+.upload-area i { font-size: 2rem; color: #94a3b8; }
+.upload-area p { margin: 8px 0 4px; color: #64748b; font-size: 14px; }
 .backup-card {
     display: block;
     text-align: center;
@@ -551,38 +386,14 @@ document.addEventListener('DOMContentLoaded', function() {
     background: #F8FAFC;
     border-radius: 16px;
     border: 2px solid transparent;
-    transition: all 0.3s ease;
     text-decoration: none;
     color: inherit;
     cursor: pointer;
 }
-
-.backup-card:hover {
-    border-color: #2563EB;
-    transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.06);
-    text-decoration: none;
-    color: inherit;
-}
-
-.backup-icon {
-    font-size: 2rem;
-    color: #2563EB;
-    margin-bottom: 8px;
-}
-
-.backup-label {
-    font-weight: 700;
-    font-size: 14px;
-    color: #0F172A;
-}
-
-.backup-desc {
-    font-size: 12px;
-    color: #94a3b8;
-}
-
-/* ===== Info Box ===== */
+.backup-card:hover { border-color: #2563EB; text-decoration: none; color: inherit; }
+.backup-icon { font-size: 2rem; color: #2563EB; margin-bottom: 8px; }
+.backup-label { font-weight: 700; font-size: 14px; color: #0F172A; }
+.backup-desc { font-size: 12px; color: #94a3b8; }
 .info-box {
     display: flex;
     align-items: flex-start;
@@ -591,13 +402,7 @@ document.addEventListener('DOMContentLoaded', function() {
     background: #F8FAFC;
     border-radius: 12px;
 }
-
-.info-box i {
-    font-size: 1.5rem;
-    color: #2563EB;
-}
-
-/* ===== Danger Zone ===== */
+.info-box i { font-size: 1.5rem; color: #2563EB; }
 .danger-zone {
     background: #FEF2F2;
     border: 2px solid #FCA5A5;
@@ -605,7 +410,6 @@ document.addEventListener('DOMContentLoaded', function() {
     overflow: hidden;
     height: 100%;
 }
-
 .danger-zone-header {
     padding: 16px 24px;
     background: #FEE2E2;
@@ -615,11 +419,6 @@ document.addEventListener('DOMContentLoaded', function() {
     font-weight: 700;
     color: #991B1B;
 }
-
-.danger-zone-header i {
-    font-size: 1.3rem;
-}
-
 .danger-badge {
     background: #DC2626;
     color: white;
@@ -628,27 +427,6 @@ document.addEventListener('DOMContentLoaded', function() {
     border-radius: 50px;
     font-weight: 600;
 }
-
-.danger-zone-body {
-    padding: 24px;
-}
-
-/* ===== Modal ===== */
-.modal-content {
-    border-radius: 20px;
-}
-
-/* ===== Responsive ===== */
-@media (max-width: 768px) {
-    .page-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-    .logo-preview {
-        width: 140px;
-        height: 140px;
-    }
-}
+.danger-zone-body { padding: 24px; }
 </style>
 {% endblock %}

@@ -2,85 +2,85 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-coin"></i> دفعات العقد</h2>
+    <h2><i class="bi bi-coin"></i> {{ t('contract_payments') }}</h2>
     <div>
         <a href="/contract/{{ contract.id }}" class="btn btn-primary">
-            <i class="bi bi-eye"></i> تفاصيل العقد
+            <i class="bi bi-eye"></i> {{ t('contract_details') }}
         </a>
         <a href="/contracts_report" class="btn btn-secondary">
-            <i class="bi bi-arrow-right"></i> رجوع
+            <i class="bi bi-arrow-right"></i> {{ t('back') }}
         </a>
     </div>
 </div>
 
 <div class="card mb-4">
     <div class="card-header bg-info text-white">
-        <h5 class="mb-0">معلومات العقد</h5>
+        <h5 class="mb-0">{{ t('contract_info') }}</h5>
     </div>
     <div class="card-body">
         <div class="row">
             <div class="col-md-4">
-                <strong>رقم العقد:</strong> {{ contract.contract_number }}
+                <strong>{{ t('contract_number') }}:</strong> {{ contract.contract_number }}
             </div>
             <div class="col-md-4">
-                <strong>العنوان:</strong> {{ contract.title }}
+                <strong>{{ t('title') }}:</strong> {{ contract.title }}
             </div>
             <div class="col-md-4">
-                <strong>العميل:</strong> {{ contract.client_name }}
+                <strong>{{ t('client') }}:</strong> {{ contract.client_name }}
             </div>
         </div>
         <div class="row mt-2">
             <div class="col-md-4">
-                <strong>القيمة الإجمالية:</strong> {{ contract.total_amount or contract.contract_value }} ج.م
+                <strong>{{ t('total_value') }}:</strong> {{ contract.total_amount or contract.contract_value }} {{ t('currency') }}
             </div>
             <div class="col-md-4">
-                <strong>المدفوع:</strong> {{ contract.paid_amount or 0 }} ج.م
+                <strong>{{ t('total_paid') }}:</strong> {{ contract.paid_amount or 0 }} {{ t('currency') }}
             </div>
             <div class="col-md-4">
-                <strong>حالة الدفع:</strong>
+                <strong>{{ t('payment_status') }}:</strong>
                 <span class="badge 
                     {% if contract.payment_status == 'مدفوع بالكامل' %}bg-success
-                    {% elif contract.payment_status == 'مدفوع جزئياً' %}bg-warning text-dark
+                    {% elif contract.payment_status == 'مدفوع جزئيا' %}bg-warning text-dark
                     {% else %}bg-danger{% endif %}">
-                    {{ contract.payment_status }}
+                    {% if contract.payment_status == 'مدفوع بالكامل' %}{{ t('status_fully_paid') }}
+                    {% elif contract.payment_status == 'مدفوع جزئيا' %}{{ t('status_partially_paid') }}
+                    {% else %}{{ t('status_unpaid') }}{% endif %}
                 </span>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ===== إحصائيات الدفعات ===== -->
 <div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="card bg-success text-white">
             <div class="card-body text-center">
-                <h6>المدفوع</h6>
-                <h3>{{ total_paid|round(2) }} ج.م</h3>
+                <h6>{{ t('total_paid') }}</h6>
+                <h3>{{ total_paid|round(2) }} {{ t('currency') }}</h3>
             </div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card bg-warning text-dark">
             <div class="card-body text-center">
-                <h6>المستحق</h6>
-                <h3>{{ total_due|round(2) }} ج.م</h3>
+                <h6>{{ t('due') }}</h6>
+                <h3>{{ total_due|round(2) }} {{ t('currency') }}</h3>
             </div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card bg-danger text-white">
             <div class="card-body text-center">
-                <h6>المتأخر</h6>
-                <h3>{{ total_overdue|round(2) }} ج.م</h3>
+                <h6>{{ t('overdue') }}</h6>
+                <h3>{{ total_overdue|round(2) }} {{ t('currency') }}</h3>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ===== قائمة الدفعات ===== -->
 <div class="card">
     <div class="card-header bg-primary text-white">
-        <h5 class="mb-0"><i class="bi bi-list-ul"></i> جدول الدفعات</h5>
+        <h5 class="mb-0"><i class="bi bi-list-ul"></i> {{ t('payment_schedule') }}</h5>
     </div>
     <div class="card-body">
         {% if payments %}
@@ -89,13 +89,13 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>رقم الدفعة</th>
-                        <th>المبلغ</th>
-                        <th>تاريخ الاستحقاق</th>
-                        <th>تاريخ الدفع</th>
-                        <th>الحالة</th>
-                        <th>ملاحظات</th>
-                        <th>إجراءات</th>
+                        <th>{{ t('installment_number') }}</th>
+                        <th>{{ t('amount') }}</th>
+                        <th>{{ t('due_date') }}</th>
+                        <th>{{ t('payment_date') }}</th>
+                        <th>{{ t('status') }}</th>
+                        <th>{{ t('notes') }}</th>
+                        <th>{{ t('actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -103,7 +103,7 @@
                     <tr>
                         <td>{{ loop.index }}</td>
                         <td>{{ payment.installment_number }}</td>
-                        <td><strong>{{ payment.amount }} ج.م</strong></td>
+                        <td><strong>{{ payment.amount }} {{ t('currency') }}</strong></td>
                         <td>{{ payment.due_date }}</td>
                         <td>{{ payment.payment_date or '-' }}</td>
                         <td>
@@ -111,19 +111,21 @@
                                 {% if payment.status == 'مدفوعة' %}bg-success
                                 {% elif payment.status == 'متأخرة' %}bg-danger
                                 {% else %}bg-warning text-dark{% endif %}">
-                                {{ payment.status }}
+                                {% if payment.status == 'مدفوعة' %}{{ t('status_paid') }}
+                                {% elif payment.status == 'متأخرة' %}{{ t('status_overdue') }}
+                                {% else %}{{ t('status_due') }}{% endif %}
                             </span>
                         </td>
                         <td>{{ payment.notes or '-' }}</td>
                         <td>
                             {% if payment.status != 'مدفوعة' %}
                             <form action="/mark_payment_paid/{{ payment.id }}" method="POST" style="display:inline-block;">
-                                <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('تأكيد استلام هذه الدفعة؟')">
-                                    <i class="bi bi-check-circle"></i> استلام
+                                <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('{{ t('confirm_receive_payment') }}')">
+                                    <i class="bi bi-check-circle"></i> {{ t('receive') }}
                                 </button>
                             </form>
                             {% else %}
-                            <span class="text-success"><i class="bi bi-check-circle"></i> مدفوعة</span>
+                            <span class="text-success"><i class="bi bi-check-circle"></i> {{ t('paid') }}</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -134,7 +136,7 @@
         {% else %}
         <div class="alert alert-info text-center">
             <i class="bi bi-coin" style="font-size:32px;display:block;"></i>
-            <p>لا توجد دفعات مسجلة لهذا العقد</p>
+            <p>{{ t('no_payments_for_contract') }}</p>
         </div>
         {% endif %}
     </div>

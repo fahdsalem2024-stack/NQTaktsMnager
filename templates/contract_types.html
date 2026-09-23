@@ -2,13 +2,12 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-tags"></i> أنواع العقود</h2>
+    <h2><i class="bi bi-tags"></i> {{ t('contract_types') }}</h2>
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTypeModal">
-        <i class="bi bi-plus-circle"></i> إضافة نوع جديد
+        <i class="bi bi-plus-circle"></i> {{ t('add_new_type') }}
     </button>
 </div>
 
-<!-- ===== قائمة الأنواع ===== -->
 <div class="card">
     <div class="card-body">
         {% if types %}
@@ -17,11 +16,11 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>الاسم</th>
-                        <th>الوصف</th>
-                        <th>الحالة</th>
-                        <th>تاريخ الإضافة</th>
-                        <th>إجراءات</th>
+                        <th>{{ t('name') }}</th>
+                        <th>{{ t('description') }}</th>
+                        <th>{{ t('status') }}</th>
+                        <th>{{ t('created_at') }}</th>
+                        <th>{{ t('actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -32,9 +31,9 @@
                         <td>{{ type.description or '-' }}</td>
                         <td>
                             {% if type.is_active %}
-                            <span class="badge bg-success">نشط</span>
+                            <span class="badge bg-success">{{ t('status_active') }}</span>
                             {% else %}
-                            <span class="badge bg-secondary">غير نشط</span>
+                            <span class="badge bg-secondary">{{ t('status_inactive') }}</span>
                             {% endif %}
                         </td>
                         <td>{{ type.created_at[:10] }}</td>
@@ -43,42 +42,41 @@
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <form action="/delete_contract_type/{{ type.id }}" method="POST" style="display:inline-block;">
-                                <button class="btn btn-sm btn-danger" onclick="return confirm('تأكيد الحذف؟')">
+                                <button class="btn btn-sm btn-danger" onclick="return confirm('{{ t('confirm_delete') }}')">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>
                         </td>
                     </tr>
-                    
-                    <!-- ===== مودال تعديل ===== -->
+
                     <div class="modal fade" id="editTypeModal{{ type.id }}" tabindex="-1">
                         <div class="modal-dialog">
                             <div class="modal-content">
                                 <form action="/edit_contract_type/{{ type.id }}" method="POST">
                                     <div class="modal-header bg-info text-white">
-                                        <h5 class="modal-title">تعديل نوع العقد</h5>
+                                        <h5 class="modal-title">{{ t('edit_contract_type') }}</h5>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                     </div>
                                     <div class="modal-body">
                                         <div class="mb-3">
-                                            <label class="form-label">الاسم <span class="text-danger">*</span></label>
+                                            <label class="form-label">{{ t('name') }} <span class="text-danger">*</span></label>
                                             <input type="text" name="name" class="form-control" value="{{ type.name }}" required>
                                         </div>
                                         <div class="mb-3">
-                                            <label class="form-label">الوصف</label>
+                                            <label class="form-label">{{ t('description') }}</label>
                                             <textarea name="description" class="form-control" rows="2">{{ type.description or '' }}</textarea>
                                         </div>
                                         <div class="mb-3">
-                                            <label class="form-label">الحالة</label>
+                                            <label class="form-label">{{ t('status') }}</label>
                                             <select name="is_active" class="form-select">
-                                                <option value="1" {% if type.is_active %}selected{% endif %}>نشط</option>
-                                                <option value="0" {% if not type.is_active %}selected{% endif %}>غير نشط</option>
+                                                <option value="1" {% if type.is_active %}selected{% endif %}>{{ t('status_active') }}</option>
+                                                <option value="0" {% if not type.is_active %}selected{% endif %}>{{ t('status_inactive') }}</option>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                                        <button type="submit" class="btn btn-primary">حفظ</button>
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('cancel') }}</button>
+                                        <button type="submit" class="btn btn-primary">{{ t('save') }}</button>
                                     </div>
                                 </form>
                             </div>
@@ -91,35 +89,34 @@
         {% else %}
         <div class="alert alert-info text-center">
             <i class="bi bi-tags" style="font-size:48px;display:block;"></i>
-            <h4>لا توجد أنواع عقود</h4>
-            <p>قم بإضافة نوع عقد جديد</p>
+            <h4>{{ t('no_contract_types') }}</h4>
+            <p>{{ t('add_new_contract_type') }}</p>
         </div>
         {% endif %}
     </div>
 </div>
 
-<!-- ===== مودال إضافة نوع جديد ===== -->
 <div class="modal fade" id="addTypeModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <form action="/add_contract_type" method="POST">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title"><i class="bi bi-plus-circle"></i> إضافة نوع عقد جديد</h5>
+                    <h5 class="modal-title"><i class="bi bi-plus-circle"></i> {{ t('add_new_contract_type') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">الاسم <span class="text-danger">*</span></label>
-                        <input type="text" name="name" class="form-control" required placeholder="مثال: عقد خدمة">
+                        <label class="form-label">{{ t('name') }} <span class="text-danger">*</span></label>
+                        <input type="text" name="name" class="form-control" required placeholder="{{ t('contract_type_name_hint') }}">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">الوصف</label>
-                        <textarea name="description" class="form-control" rows="2" placeholder="وصف نوع العقد"></textarea>
+                        <label class="form-label">{{ t('description') }}</label>
+                        <textarea name="description" class="form-control" rows="2" placeholder="{{ t('contract_type_desc_hint') }}"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn btn-primary">إضافة</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ t('add') }}</button>
                 </div>
             </form>
         </div>
