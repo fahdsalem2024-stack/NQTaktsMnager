@@ -109,8 +109,6 @@ if USE_POSTGRES:
             return self
 
         def _translate_query(self, query):
-            """تحويل استعلامات SQLite لـ PostgreSQL"""
-            # 1. معالجة date() و datetime()
             query = re.sub(
                 r"date\(\s*[\"']now[\"']\s*,\s*[\"']-(\d+)\s+days?[\"']\s*\)",
                 r"(CURRENT_DATE - INTERVAL '\1 days')",
@@ -131,18 +129,12 @@ if USE_POSTGRES:
                 r"NOW()",
                 query
             )
-
-            # 2. تحويل "text" إلى 'text' (النصوص العربية)
             query = re.sub(r'"([^"]*[\u0600-\u06FF]+[^"]*)"', r"'\1'", query)
-
-            # 3. strftime
             query = re.sub(
                 r"strftime\(['\"]%Y-%m['\"],\s*([^)]+)\)",
                 r"TO_CHAR(\1, 'YYYY-MM')",
                 query
             )
-
-            # 4. GROUP_CONCAT → STRING_AGG
             query = re.sub(
                 r"GROUP_CONCAT\(([^,]+),\s*['\"]([^'\"]+)['\"]\)",
                 r"STRING_AGG(\1, '\2')",
@@ -155,17 +147,12 @@ if USE_POSTGRES:
                 query,
                 flags=re.IGNORECASE
             )
-
-            # 5. INSERT OR IGNORE
             if 'INSERT OR IGNORE' in query:
                 query = query.replace('INSERT OR IGNORE', 'INSERT')
                 if 'ON CONFLICT' not in query:
                     query = query.rstrip(';').rstrip() + ' ON CONFLICT DO NOTHING'
-
-            # 6. INSERT OR REPLACE
             if 'INSERT OR REPLACE' in query:
                 query = query.replace('INSERT OR REPLACE', 'INSERT')
-
             return query
 
         def fetchone(self):
@@ -229,12 +216,9 @@ if USE_POSTGRES:
             self.close()
 
     def get_db():
-        """إرجاع اتصال PostgreSQL (مع فحص صلاحية الاتصال)"""
         try:
             pool = _get_pg_pool()
             conn = pool.getconn()
-            
-            # ✅ فحص الاتصال قبل الإرجاع
             try:
                 cur = conn.cursor()
                 cur.execute('SELECT 1')
@@ -246,12 +230,10 @@ if USE_POSTGRES:
                 except:
                     pass
                 conn = pool.getconn()
-            
             return PostgresConnection(conn)
         except Exception as e:
             print(f"❌ فشل الحصول على اتصال: {e}")
             raise
-
 
 else:
     def get_db():
@@ -820,9 +802,15 @@ def _init_sqlite():
     print(f"✅ SQLite initialized at {DB_PATH}")
 
 
-try:
-    init_db()
-except Exception as e:
-    print(f"❌ خطأ في تهيئة قاعدة البيانات: {e}")
-    import traceback
-    traceback.print_exc()
+# ⚠️ init_db() مش بتتنفذ تلقائياً عشان نتجنب استدعاءها مرتين
+# (في app.py بتتنفذ مرة واحدة فقط لو INIT_DB_ON_START=1)
+if os.environ.get('INIT_DB_ON_START') == '1':
+    try:
+        init_db()
+        print("✅ init_db() executed (INIT_DB_ON_START=1)")
+    except Exception as e:
+        print(f"❌ خطأ في تهيئة قاعدة البيانات: {e}")
+        import traceback
+        traceback.print_exc()
+else:
+    print("ℹ️ init_db() skipped (INIT_DB_ON_START is not set to 1)")

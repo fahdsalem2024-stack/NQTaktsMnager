@@ -1,6 +1,6 @@
 # routes/tasks.py
 from flask import render_template, request, redirect, url_for, session, flash, send_file, current_app
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from werkzeug.utils import secure_filename
 import os
 import math
@@ -16,90 +16,104 @@ from utils.decorators import login_required, role_required, permission_required
 def tasks():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
-    
+
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
     search = request.args.get('search', '').strip()
     status_filter = request.args.get('status', '')
-    
+
     if per_page == 0 or per_page == 999999:
         per_page = 999999
         page = 1
-    
+
     conn = get_db()
-    user_role = session['user_role']
-    
+    user_role = session.get('user_role', '')
+
     query = '''
-        SELECT tasks.*, clients.name as client_name, clients.company_name, 
+        SELECT tasks.*, clients.name as client_name, clients.company_name,
                trainers.name as trainer_name, users.name as assigned_user_name
-        FROM tasks 
-        JOIN clients ON tasks.client_id = clients.id 
+        FROM tasks
+        JOIN clients ON tasks.client_id = clients.id
         LEFT JOIN trainers ON tasks.trainer_id = trainers.id
         LEFT JOIN users ON tasks.assigned_user_id = users.id
         WHERE 1=1
     '''
     params = []
-    
+
     if user_role == 'موظف':
         query += ' AND (tasks.created_by = ? OR tasks.assigned_user_id = ?)'
         params.extend([session['user_id'], session['user_id']])
-    
+
     if search:
         query += ' AND (clients.name LIKE ? OR clients.company_name LIKE ? OR tasks.title LIKE ?)'
-        search_param = f'%{search}%'
-        params.extend([search_param, search_param, search_param])
-    
+        sp = f'%{search}%'
+        params.extend([sp, sp, sp])
+
     if status_filter:
         query += ' AND tasks.status = ?'
         params.append(status_filter)
-    
+
     query += ' ORDER BY tasks.due_date ASC'
-    
+
     count_query = '''
         SELECT COUNT(*) as count
-        FROM tasks 
-        JOIN clients ON tasks.client_id = clients.id 
+        FROM tasks
+        JOIN clients ON tasks.client_id = clients.id
         LEFT JOIN trainers ON tasks.trainer_id = trainers.id
         LEFT JOIN users ON tasks.assigned_user_id = users.id
         WHERE 1=1
     '''
     count_params = []
-    
+
     if user_role == 'موظف':
         count_query += ' AND (tasks.created_by = ? OR tasks.assigned_user_id = ?)'
         count_params.extend([session['user_id'], session['user_id']])
-    
+
     if search:
         count_query += ' AND (clients.name LIKE ? OR clients.company_name LIKE ? OR tasks.title LIKE ?)'
-        count_params.extend([search_param, search_param, search_param])
-    
+        count_params.extend([sp, sp, sp])
+
     if status_filter:
         count_query += ' AND tasks.status = ?'
         count_params.append(status_filter)
-    
+
     total = conn.execute(count_query, count_params).fetchone()['count']
-    
+
     if per_page != 999999:
         query += ' LIMIT ? OFFSET ?'
-        offset = (page - 1) * per_page
-        params.extend([per_page, offset])
-    
+        params.extend([per_page, (page - 1) * per_page])
+
     task_list = conn.execute(query, params).fetchall()
-    conn.close()
-    
-    total_pages = math.ceil(total / per_page) if per_page != 999999 and total > 0 else 1
-    per_page_options = [10, 25, 50, 100]
-    
-    conn = get_db()
+
     stats = {
         'total': conn.execute('SELECT COUNT(*) as count FROM tasks').fetchone()['count'],
-        'completed': conn.execute('SELECT COUNT(*) as count FROM tasks WHERE status = "مكتملة"').fetchone()['count'],
-        'in_progress': conn.execute('SELECT COUNT(*) as count FROM tasks WHERE status = "قيد التنفيذ"').fetchone()['count'],
-        'overdue': conn.execute('SELECT COUNT(*) as count FROM tasks WHERE status = "متأخرة"').fetchone()['count']
+        'completed': conn.execute("SELECT COUNT(*) as count FROM tasks WHERE status = 'مكتملة'").fetchone()['count'],
+        'in_progress': conn.execute("SELECT COUNT(*) as count FROM tasks WHERE status = 'قيد التنفيذ'").fetchone()['count'],
+        'overdue': conn.execute("SELECT COUNT(*) as count FROM tasks WHERE status = 'متأخرة'").fetchone()['count'],
     }
     conn.close()
-    
-    return render_template('tasks.html', 
+
+    # ✅ الحل: احسب is_overdue هنا وابعت للـ template قيم جاهزة
+    today_str = date.today().strftime('%Y-%m-%d')
+    for task in task_list:
+        due = task['due_date']
+        if due is None:
+            task['due_date_str'] = ''
+            task['is_overdue'] = False
+        else:
+            if hasattr(due, 'strftime'):
+                task['due_date_str'] = due.strftime('%Y-%m-%d')
+            else:
+                task['due_date_str'] = str(due)[:10]
+            task['is_overdue'] = (
+                task['due_date_str'] < today_str
+                and task['status'] != 'مكتملة'
+            )
+
+    total_pages = math.ceil(total / per_page) if per_page != 999999 and total > 0 else 1
+    per_page_options = [10, 25, 50, 100]
+
+    return render_template('tasks.html',
                          tasks=task_list,
                          page=page,
                          total_pages=total_pages,
@@ -109,7 +123,7 @@ def tasks():
                          search=search,
                          status_filter=status_filter,
                          stats=stats,
-                         today=datetime.now().date())
+                         today=date.today())
 
 
 @tasks_bp.route('/add_task', methods=['GET', 'POST'])
@@ -220,7 +234,7 @@ def task_details(task_id):
         ORDER BY task_updates.created_at DESC
     ''', (task_id,)).fetchall()
     conn.close()
-    return render_template('task_details.html', task=task, updates=updates, today=datetime.now().date())
+    return render_template('task_details.html', task=task, updates=updates, today=date.today())
 
 
 @tasks_bp.route('/edit_task/<int:task_id>', methods=['GET', 'POST'])
@@ -589,7 +603,7 @@ def search_tasks():
     
     task_list = conn.execute(query, params).fetchall()
     conn.close()
-    return render_template('tasks.html', tasks=task_list, today=datetime.now().date(), search_term=search_term)
+    return render_template('tasks.html', tasks=task_list, today=date.today(), search_term=search_term)
 
 
 @tasks_bp.route('/group_tasks', methods=['POST'])

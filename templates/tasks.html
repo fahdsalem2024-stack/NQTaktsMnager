@@ -155,12 +155,12 @@
                                 <small class="text-muted">{{ task.completion_percentage }}%</small>
                             </td>
                             <td>
-                                {% set due_date_str = task.due_date %}
-                                {% set today_str = today.strftime('%Y-%m-%d') %}
-                                {% if due_date_str < today_str and task.status != 'مكتملة' %}
-                                <span class="text-danger"><i class="bi bi-clock"></i> {{ task.due_date }}</span>
+                                {% if task.is_overdue %}
+                                    <span class="text-danger">
+                                        <i class="bi bi-clock"></i> {{ task.due_date_str or task.due_date }}
+                                    </span>
                                 {% else %}
-                                {{ task.due_date }}
+                                    {{ task.due_date_str or task.due_date }}
                                 {% endif %}
                             </td>
                             <td>
