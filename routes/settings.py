@@ -121,31 +121,18 @@ def reset_sequence():
     try:
         conn = get_db()
         
-        # قائمة الجداول اللي فيها AUTOINCREMENT
         tables = [
-            'users',
-            'clients',
-            'trainers',
-            'tasks',
-            'client_contracts',
-            'client_payments',
-            'contract_payments',
-            'contract_attachments',
-            'client_modules',
-            'meetings',
-            'notifications',
-            'activity_log',
-            'login_attempts',
-            'module_types',
-            'contract_types',
+            'users', 'clients', 'trainers', 'tasks',
+            'client_contracts', 'client_payments', 'contract_payments',
+            'contract_attachments', 'client_modules', 'meetings',
+            'notifications', 'activity_log', 'login_attempts',
+            'module_types', 'contract_types',
         ]
         
         reset_count = 0
         
         for table in tables:
             try:
-                # ✅ الطريقة الصحيحة: نستخدم UPDATE بدل DELETE
-                # لو الجدول مش موجود في sqlite_sequence، الـ UPDATE مش هيعمل حاجة
                 result = conn.execute(
                     "UPDATE sqlite_sequence SET seq = 0 WHERE name = ?",
                     (table,)
@@ -155,7 +142,6 @@ def reset_sequence():
                     reset_count += 1
                     print(f"✅ تم تصفير ترقيم: {table}")
                 else:
-                    # لو الجدول مش موجود في sqlite_sequence، نحاول نضيفه
                     try:
                         conn.execute(
                             "INSERT INTO sqlite_sequence (name, seq) VALUES (?, 0)",
@@ -182,6 +168,7 @@ def reset_sequence():
     return redirect(url_for('settings.company_settings'))
 
 
+# ✅ إصلاح: ترتيب الحذف من الأبناء للأباء + استخدام Exception
 @settings_bp.route('/delete_all_data', methods=['POST'])
 def delete_all_data():
     """حذف جميع البيانات من النظام (للمدير فقط)"""
@@ -191,7 +178,6 @@ def delete_all_data():
     
     confirm_text = request.form.get('confirm_text', '').strip()
     
-    # ✅ يقبل "تأكيد" بالعربي أو "Confirm"/"confirm" بالإنجليزي
     if confirm_text not in ['تأكيد', 'Confirm', 'confirm']:
         flash('❌ لم تقم بتأكيد الحذف بشكل صحيح', 'danger')
         return redirect(url_for('settings.company_settings'))
@@ -199,44 +185,57 @@ def delete_all_data():
     try:
         conn = get_db()
         
-        # عمل نسخة احتياطية قبل الحذف
-        backup_dir = '/app/data/backups/'
-        os.makedirs(backup_dir, exist_ok=True)
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        backup_name = f"backup_before_delete_{timestamp}.db"
-        backup_path = os.path.join(backup_dir, backup_name)
-        
-        db_path = '/app/data/tasks.db'
-        if os.path.exists(db_path):
-            shutil.copy2(db_path, backup_path)
-            print(f"✅ نسخة احتياطية قبل الحذف: {backup_name}")
-        
+        # ✅ ترتيب الحذف من الأبناء للأباء (مهم جداً!)
         tables = [
-            'contract_payments', 'contract_attachments', 'contract_modules',
-            'client_contracts', 'client_payments', 'payment_installments',
-            'client_modules', 'task_updates', 'tasks', 'meeting_reminders',
-            'meetings', 'client_trainers', 'clients', 'trainers',
-            'notifications', 'activity_log', 'login_attempts'
+            # 1. الأبناء الأعمق
+            'task_updates',
+            'contract_modules',
+            'contract_attachments',
+            'payment_installments',
+            'meeting_reminders',
+            
+            # 2. المهام (بتشاور على contract_payments + clients + meetings)
+            'tasks',
+            
+            # 3. بقية الأبناء
+            'contract_payments',
+            'client_payments',
+            'client_modules',
+            'client_contracts',
+            'meetings',
+            
+            # 4. العلاقات
+            'client_trainers',
+            
+            # 5. الأباء
+            'clients',
+            'trainers',
+            
+            # 6. السجلات
+            'notifications',
+            'activity_log',
+            'login_attempts',
         ]
         
+        deleted_count = 0
         for table in tables:
             try:
                 conn.execute(f"DELETE FROM {table}")
+                deleted_count += 1
                 print(f"✅ تم مسح جدول: {table}")
-            except sqlite3.OperationalError as e:
-                if 'no such table' in str(e):
-                    print(f"⚠️ الجدول {table} غير موجود")
-                else:
-                    print(f"❌ خطأ في {table}: {e}")
+            except Exception as e:
+                print(f"⚠️ خطأ في {table}: {e}")
         
         conn.commit()
         conn.close()
         
-        flash(f'✅ تم مسح جميع البيانات بنجاح! (نسخة احتياطية: {backup_name})', 'success')
-        log_activity(session['user_id'], 'مسح جميع البيانات', f'تم مسح جميع البيانات، النسخة الاحتياطية: {backup_name}')
+        flash(f'✅ تم مسح جميع البيانات بنجاح! ({deleted_count} جدول)', 'success')
+        log_activity(session['user_id'], 'مسح جميع البيانات', f'تم مسح {deleted_count} جدول')
         
     except Exception as e:
         flash(f'❌ خطأ أثناء مسح البيانات: {str(e)}', 'danger')
         print(f"❌ خطأ: {e}")
+        import traceback
+        traceback.print_exc()
     
     return redirect(url_for('settings.company_settings'))

@@ -161,6 +161,7 @@ def edit_client(client_id):
                          current_trainer_ids=current_trainer_ids)
 
 
+# ✅ إصلاح: تحقق من العلاقات قبل الحذف
 @clients_bp.route('/delete_client/<int:client_id>', methods=['POST'])
 def delete_client(client_id):
     if not check_role(['مدير']):
@@ -174,8 +175,53 @@ def delete_client(client_id):
         conn.close()
         return redirect(url_for('clients.clients'))
     
-    conn.execute('DELETE FROM clients WHERE id = ?', (client_id,))
+    # ✅ تحقق من المهام المرتبطة
+    tasks_count = conn.execute(
+        'SELECT COUNT(*) as count FROM tasks WHERE client_id = ?',
+        (client_id,)
+    ).fetchone()['count']
+    
+    if tasks_count > 0:
+        flash(f'❌ لا يمكن حذف العميل — مرتبط بـ {tasks_count} تدريب. احذف التدريبات الأول.', 'danger')
+        conn.close()
+        return redirect(url_for('clients.clients'))
+    
+    # ✅ تحقق من العقود المرتبطة
+    contracts_count = conn.execute(
+        'SELECT COUNT(*) as count FROM client_contracts WHERE client_id = ?',
+        (client_id,)
+    ).fetchone()['count']
+    
+    if contracts_count > 0:
+        flash(f'❌ لا يمكن حذف العميل — مرتبط بـ {contracts_count} عقد.', 'danger')
+        conn.close()
+        return redirect(url_for('clients.clients'))
+    
+    # ✅ تحقق من المدفوعات المرتبطة
+    payments_count = conn.execute(
+        'SELECT COUNT(*) as count FROM client_payments WHERE client_id = ?',
+        (client_id,)
+    ).fetchone()['count']
+    
+    if payments_count > 0:
+        flash(f'❌ لا يمكن حذف العميل — مرتبط بـ {payments_count} دفعة.', 'danger')
+        conn.close()
+        return redirect(url_for('clients.clients'))
+    
+    # ✅ تحقق من المواعيد المرتبطة
+    meetings_count = conn.execute(
+        'SELECT COUNT(*) as count FROM meetings WHERE client_id = ?',
+        (client_id,)
+    ).fetchone()['count']
+    
+    if meetings_count > 0:
+        flash(f'❌ لا يمكن حذف العميل — مرتبط بـ {meetings_count} موعد.', 'danger')
+        conn.close()
+        return redirect(url_for('clients.clients'))
+    
+    # ✅ كل حاجة تمام — نحذف
     conn.execute('DELETE FROM client_trainers WHERE client_id = ?', (client_id,))
+    conn.execute('DELETE FROM clients WHERE id = ?', (client_id,))
     conn.commit()
     conn.close()
     
@@ -199,7 +245,6 @@ def client_tasks(client_id):
         flash('❌ العميل غير موجود', 'danger')
         return redirect(url_for('clients.clients'))
     
-    # ✅ تم إصلاح assigned_to → trainer_id
     tasks = conn.execute('''
         SELECT tasks.*, trainers.name as assigned_name
         FROM tasks
@@ -239,7 +284,6 @@ def print_client_tasks(client_id):
         flash('❌ العميل غير موجود', 'danger')
         return redirect(url_for('clients.clients'))
     
-    # ✅ تم إصلاح assigned_to → trainer_id
     tasks = conn.execute('''
         SELECT tasks.*, trainers.name as assigned_name
         FROM tasks

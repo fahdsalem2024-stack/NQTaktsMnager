@@ -257,6 +257,15 @@ def edit_contract(contract_id):
         ''', (client_id, contract_type_id, contract_number, title, description, start_date, end_date, 
               contract_value, status, notes, contract_id))
         
+        # ✅ إصلاح: افصل الربط مع tasks قبل الحذف
+        conn.execute('''
+            UPDATE tasks
+            SET contract_payment_id = NULL
+            WHERE contract_payment_id IN (
+                SELECT id FROM contract_payments WHERE contract_id = ?
+            )
+        ''', (contract_id,))
+        
         conn.execute('DELETE FROM contract_payments WHERE contract_id = ?', (contract_id,))
         
         installment_count = int(request.form.get('installment_count', 0))
@@ -320,6 +329,7 @@ def edit_contract(contract_id):
                          contract_payments=contract_payments)
 
 
+# ✅ إصلاح: احذف الأبناء بالترتيب الصح
 @contracts_bp.route('/delete_contract/<int:contract_id>', methods=['POST'])
 def delete_contract(contract_id):
     if 'user_id' not in session:
@@ -332,7 +342,27 @@ def delete_contract(contract_id):
         conn.close()
         return redirect(url_for('contracts.contracts'))
     
+    # ✅ افصل الربط مع tasks أولاً
+    conn.execute('''
+        UPDATE tasks
+        SET contract_payment_id = NULL
+        WHERE contract_payment_id IN (
+            SELECT id FROM contract_payments WHERE contract_id = ?
+        )
+    ''', (contract_id,))
+    
+    # ✅ احذف المرفقات
+    conn.execute('DELETE FROM contract_attachments WHERE contract_id = ?', (contract_id,))
+    
+    # ✅ احذف دفعات العقد
+    conn.execute('DELETE FROM contract_payments WHERE contract_id = ?', (contract_id,))
+    
+    # ✅ احذف مديولات العقد
+    conn.execute('DELETE FROM contract_modules WHERE contract_id = ?', (contract_id,))
+    
+    # ✅ احذف العقد نفسه
     conn.execute('DELETE FROM client_contracts WHERE id = ?', (contract_id,))
+    
     conn.commit()
     conn.close()
     
@@ -583,7 +613,6 @@ def download_contract_attachment(attachment_id):
     
     conn.close()
     
-    # 🔒 التحقق من أمان المسار
     if not is_safe_path(attachment['file_path']):
         flash('⛔ مسار الملف غير آمن', 'danger')
         log_activity(session['user_id'], 'محاولة وصول غير مصرح', 
@@ -611,7 +640,6 @@ def delete_contract_attachment(attachment_id):
         conn.close()
         return redirect(url_for('contracts.contracts'))
     
-    # 🔒 التحقق من أمان المسار قبل الحذف
     if not is_safe_path(attachment['file_path']):
         flash('⛔ مسار الملف غير آمن', 'danger')
         conn.close()
